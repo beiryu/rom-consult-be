@@ -11,7 +11,6 @@ import { EMAIL_TEMPLATES } from 'src/common/email/enums/email-template.enum';
 import { DatabaseService } from 'src/common/database/services/database.service';
 import { HelperEncryptionService } from 'src/common/helper/services/helper.encryption.service';
 import { UserService } from 'src/modules/user/services/user.service';
-import { WalletService } from 'src/modules/wallet/services/wallet.service';
 
 describe('AuthService', () => {
     let service: AuthService;
@@ -43,10 +42,6 @@ describe('AuthService', () => {
 
     const mockUserService = {};
 
-    const mockWalletService = {
-        createWallet: jest.fn().mockResolvedValue(undefined),
-    };
-
     const mockConfigService = {
         get: jest.fn().mockReturnValue('http://localhost:3000'),
     };
@@ -61,7 +56,6 @@ describe('AuthService', () => {
                     useValue: mockHelperEncryptionService,
                 },
                 { provide: UserService, useValue: mockUserService },
-                { provide: WalletService, useValue: mockWalletService },
                 { provide: ConfigService, useValue: mockConfigService },
                 {
                     provide: getQueueToken(APP_BULL_QUEUES.EMAIL),

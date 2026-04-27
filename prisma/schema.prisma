@@ -27,7 +27,6 @@ model User {
   dateOfBirth DateTime? @map("date_of_birth")
 
   // Store related fields
-  wallet          UserWallet?
   orders          Order[] @relation("UserOrders")
   cart            Cart?
   supportTickets  SupportTicket[] @relation("UserTickets")
@@ -233,8 +232,7 @@ model Order {
   buyerProtectionAmount Decimal  @default(0) @map("buyer_protection_amount") @db.Decimal(20, 8)
   status         OrderStatus     @default(PENDING)
   totalAmount    Decimal         @map("total_amount") @db.Decimal(20, 8)
-  currency       String // USD, BTC, ETH, etc.
-  cryptoPayment  CryptoPayment?
+  currency       String
   items          OrderItem[]
   review         OrderReview?
   supportTickets SupportTicket[]
@@ -296,179 +294,6 @@ model OrderItem {
   @@index([orderId])
   @@index([variantId])
   @@map("order_items")
-}
-
-// Crypto Payment System
-model CryptoPayment {
-  id      String @id @default(uuid())
-  orderId String @unique @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  // Cryptocurrency info
-  cryptocurrency CryptoCurrency
-  network        String? // e.g., "mainnet", "ERC20", "BEP20", "TRC20"
-
-  // Payment address (generated from system HD wallet)
-  paymentAddress      String @map("payment_address")
-  derivationIndex     Int    @map("derivation_index")
-  derivationPath      String @map("derivation_path")
-  encryptedPrivateKey String @map("encrypted_private_key") @db.Text
-
-  // Amount info
-  amount       Decimal  @db.Decimal(30, 18) // Crypto amount (support 18 decimals for ETH)
-  amountUsd    Decimal  @map("amount_usd") @db.Decimal(20, 2) // USD value at creation
-  exchangeRate Decimal? @map("exchange_rate") @db.Decimal(20, 8) // Rate at payment time
-
-  // Platform wallet info
-  platformWalletAddress String @map("platform_wallet_address")
-
-  // Payment status
-  status PaymentStatus @default(PENDING)
-
-  // Transaction info
-  txHash                String? @map("tx_hash") // Incoming transaction hash
-  forwardTxHash         String? @map("forward_tx_hash") // Outgoing transaction hash
-  confirmations         Int     @default(0)
-  requiredConfirmations Int     @default(3) @map("required_confirmations")
-
-  // Timestamps
-  expiresAt   DateTime  @map("expires_at")
-  paidAt      DateTime? @map("paid_at")
-  confirmedAt DateTime? @map("confirmed_at")
-  forwardedAt DateTime? @map("forwarded_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  // Metadata
-  metadata Json? // Additional info (network fee, gas price, etc.)
-
-  @@index([paymentAddress])
-  @@index([status])
-  @@index([txHash])
-  @@index([cryptocurrency])
-  @@index([expiresAt])
-  @@map("crypto_payments")
-}
-
-enum CryptoCurrency {
-  BTC // Bitcoin
-  ETH // Ethereum
-  LTC // Litecoin
-  BCH // Bitcoin Cash
-  USDT_ERC20 // USDT on Ethereum
-  USDT_TRC20 // USDT on Tron
-  USDC_ERC20 // USDC on Ethereum
-}
-
-enum PaymentStatus {
-  PENDING // Waiting for payment
-  PAID // Payment detected (but not confirmed)
-  CONFIRMING // Waiting for confirmations
-  CONFIRMED // Payment confirmed (order can proceed)
-  FORWARDING // Forwarding to platform wallet
-  FORWARDED // Successfully forwarded
-  FORWARDING_FAILED // Forwarding to platform wallet failed
-  EXPIRED // Payment window expired (15 min)
-  FAILED // Payment processing failed
-}
-
-// System Wallet Index Tracker
-model SystemWalletIndex {
-  id             String         @id @default(uuid())
-  cryptocurrency CryptoCurrency @unique
-  nextIndex      Int            @default(0) @map("next_index")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-
-  @@map("system_wallet_indexes")
-}
-
-// Crypto Exchange Rate Cache
-model CryptoExchangeRate {
-  id             String         @id @default(uuid())
-  cryptocurrency CryptoCurrency
-  fiatCurrency   String         @default("USD") @map("fiat_currency")
-  rate           Decimal        @db.Decimal(20, 8)
-  provider       String // "tatum", "kraken", etc.
-  expiresAt      DateTime       @map("expires_at")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-
-  @@unique([cryptocurrency, fiatCurrency])
-  @@index([cryptocurrency])
-  @@index([expiresAt])
-  @@map("crypto_exchange_rates")
-}
-
-// User Wallet/Balance System
-model UserWallet {
-  id           String              @id @default(uuid())
-  userId       String              @unique @map("user_id")
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  balance      Decimal             @default(0) @db.Decimal(20, 2) // USD balance
-  transactions WalletTransaction[]
-  topUps       WalletTopUp[]
-  createdAt    DateTime            @default(now()) @map("created_at")
-  updatedAt    DateTime            @updatedAt @map("updated_at")
-
-  @@map("user_wallets")
-}
-
-model WalletTopUp {
-  id                    String         @id @default(uuid())
-  walletId              String         @map("wallet_id")
-  wallet                UserWallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  cryptocurrency        CryptoCurrency
-  network               String?
-  paymentAddress        String         @map("payment_address")
-  derivationIndex       Int            @map("derivation_index")
-  derivationPath        String         @map("derivation_path")
-  encryptedPrivateKey   String         @map("encrypted_private_key")
-  amount                Decimal        @db.Decimal(30, 18)
-  amountUsd             Decimal        @map("amount_usd") @db.Decimal(20, 2)
-  exchangeRate          Decimal?       @map("exchange_rate") @db.Decimal(20, 8)
-  platformWalletAddress String         @map("platform_wallet_address")
-  status                PaymentStatus  @default(PENDING)
-  txHash                String?        @map("tx_hash")
-  forwardTxHash         String?        @map("forward_tx_hash")
-  confirmations         Int            @default(0)
-  requiredConfirmations Int            @default(3) @map("required_confirmations")
-  expiresAt             DateTime       @map("expires_at")
-  paidAt                DateTime?      @map("paid_at")
-  confirmedAt           DateTime?      @map("confirmed_at")
-  forwardedAt           DateTime?      @map("forwarded_at")
-  metadata              Json?
-  creditedAt            DateTime?      @map("credited_at")
-  createdAt             DateTime       @default(now()) @map("created_at")
-  updatedAt             DateTime       @updatedAt @map("updated_at")
-
-  @@index([walletId])
-  @@index([status])
-  @@index([paymentAddress])
-  @@map("wallet_topups")
-}
-
-model WalletTransaction {
-  id          String                @id @default(uuid())
-  walletId    String                @map("wallet_id")
-  wallet      UserWallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  type        WalletTransactionType
-  amount      Decimal               @db.Decimal(20, 2)
-  balance     Decimal               @db.Decimal(20, 2) // Balance after transaction
-  description String
-  referenceId String?               @map("reference_id") // Order ID, etc.
-  createdAt   DateTime              @default(now()) @map("created_at")
-  updatedAt   DateTime              @updatedAt @map("updated_at")
-
-  @@index([walletId])
-  @@index([type])
-  @@map("wallet_transactions")
-}
-
-enum WalletTransactionType {
-  DEPOSIT // Add funds
-  PURCHASE // Product purchase
-  REFUND // Order refund
-  ADMIN_ADJUST // Admin adjustment
 }
 
 // Support Ticket System

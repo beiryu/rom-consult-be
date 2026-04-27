@@ -20,7 +20,7 @@ export class UsersSeedService {
 
     @Command({
         command: 'seed:users',
-        describe: 'Seed one dev user (verified, full profile) + wallet',
+        describe: 'Seed one dev user (verified, full profile)',
     })
     async seed(): Promise<void> {
         const existing = await this.databaseService.user.findUnique({
@@ -54,20 +54,13 @@ export class UsersSeedService {
             },
         });
 
-        await this.databaseService.userWallet.create({
-            data: {
-                userId: user.id,
-                balance: 1000,
-            },
-        });
-
         this.logger.info(
             {
                 userId: user.id,
                 email: SEED_EMAIL,
                 password: SEED_PASSWORD,
             },
-            'Seeded user + wallet (password shown for local dev only)'
+            'Seeded user (password shown for local dev only)'
         );
     }
 }

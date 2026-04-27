@@ -22,7 +22,6 @@ export interface IOrderService {
             status?: OrderStatus;
             sortBy?: 'createdAt' | 'totalAmount';
             sortOrder?: 'asc' | 'desc';
-            cryptocurrency?: string;
         }
     ): Promise<ApiPaginatedDataDto<OrderResponseDto>>;
     getOrderDetail(
@@ -33,10 +32,6 @@ export interface IOrderService {
     updateOrderStatus(
         orderId: string,
         data: OrderStatusUpdateDto
-    ): Promise<OrderResponseDto>;
-    payOrderWithWallet(
-        orderId: string,
-        userId: string
     ): Promise<OrderResponseDto>;
     cancelOrder(orderId: string, userId: string): Promise<OrderResponseDto>;
     getAllOrders(options?: {

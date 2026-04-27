@@ -35,15 +35,14 @@ export class ReviewService {
                 items: {
                     include: { product: { select: { name: true } } },
                 },
-                cryptoPayment: { select: { cryptocurrency: true } },
             },
         },
     } as const;
 
     private mapOrderSummary(order: {
         totalAmount: Prisma.Decimal | string;
+        currency: string;
         createdAt: Date;
-        cryptoPayment?: { cryptocurrency: string } | null;
         items?: Array<{
             quantity: number;
             product?: { name?: string | null } | null;
@@ -64,7 +63,7 @@ export class ReviewService {
                     : order.totalAmount.toString(),
             date: order.createdAt.toISOString().slice(0, 10),
             time: order.createdAt.toISOString().slice(11, 19),
-            paymentMethod: order.cryptoPayment?.cryptocurrency ?? 'UNKNOWN',
+            paymentMethod: order.currency,
         };
     }
 
@@ -76,8 +75,8 @@ export class ReviewService {
         createdAt: Date;
         order: {
             totalAmount: Prisma.Decimal | string;
+            currency: string;
             createdAt: Date;
-            cryptoPayment?: { cryptocurrency: string } | null;
             items?: Array<{
                 quantity: number;
                 product?: { name?: string | null } | null;

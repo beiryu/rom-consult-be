@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { OrderStatus, PaymentStatus, CryptoCurrency } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 import {
     IsArray,
     IsDate,
@@ -113,44 +113,6 @@ export class PurchaseHistoryOrderItemDto {
     product: PurchaseHistoryProductDto;
 }
 
-export class PurchaseHistoryCryptoPaymentDto {
-    @ApiProperty()
-    @Expose()
-    @IsString()
-    id: string;
-
-    @ApiProperty({ enum: CryptoCurrency })
-    @Expose()
-    @IsEnum(CryptoCurrency)
-    cryptocurrency: CryptoCurrency;
-
-    @ApiProperty()
-    @Expose()
-    @IsString()
-    paymentAddress: string;
-
-    @ApiProperty()
-    @Expose()
-    @IsNumber()
-    amount: number;
-
-    @ApiProperty()
-    @Expose()
-    @IsNumber()
-    amountUsd: number;
-
-    @ApiProperty({ enum: PaymentStatus })
-    @Expose()
-    @IsEnum(PaymentStatus)
-    status: PaymentStatus;
-
-    @ApiProperty()
-    @Expose()
-    @IsString()
-    @IsOptional()
-    txHash?: string | null;
-}
-
 export class PurchaseHistoryOrderDto {
     @ApiProperty()
     @Expose()
@@ -182,12 +144,6 @@ export class PurchaseHistoryOrderDto {
     @Type(() => PurchaseHistoryOrderItemDto)
     @IsArray()
     items: PurchaseHistoryOrderItemDto[];
-
-    @ApiProperty({ type: PurchaseHistoryCryptoPaymentDto, required: false })
-    @Expose()
-    @Type(() => PurchaseHistoryCryptoPaymentDto)
-    @IsOptional()
-    cryptoPayment?: PurchaseHistoryCryptoPaymentDto | null;
 
     @ApiProperty()
     @Expose()

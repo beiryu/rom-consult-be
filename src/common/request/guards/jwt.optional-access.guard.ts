@@ -7,7 +7,7 @@ import { AuthGuard } from '@nestjs/passport';
 
 /**
  * Validates JWT when `Authorization: Bearer` is present; otherwise allows the
- * request through with no `request.user` (for guest checkout + crypto flows).
+ * request through with no `request.user` (for guest checkout flows).
  */
 @Injectable()
 export class JwtOptionalAccessGuard extends AuthGuard('jwt-access') {

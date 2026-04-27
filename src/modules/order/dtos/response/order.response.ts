@@ -13,7 +13,6 @@ import {
     ValidateNested,
 } from 'class-validator';
 import { ProductResponseDto } from 'src/modules/product/dtos/response/product.response';
-import { CryptoPaymentResponseDto } from 'src/modules/crypto-payment/dtos/response/crypto-payment.response';
 
 export class OrderItemResponseDto implements OrderItem {
     @ApiProperty({
@@ -273,16 +272,6 @@ export class OrderResponseDto {
     @ValidateNested({ each: true })
     @Type(() => OrderItemResponseDto)
     items?: OrderItemResponseDto[];
-
-    @ApiPropertyOptional({
-        type: CryptoPaymentResponseDto,
-        description: 'Crypto payment details (if payment method is CRYPTO)',
-    })
-    @Expose()
-    @IsOptional()
-    @ValidateNested()
-    @Type(() => CryptoPaymentResponseDto)
-    cryptoPayment?: CryptoPaymentResponseDto;
 
     @ApiPropertyOptional({
         type: OrderReviewEmbedDto,

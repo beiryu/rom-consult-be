@@ -39,9 +39,6 @@ async function bootstrap(): Promise<void> {
 
             // Register all queues for monitoring
             const queues = [
-                // Crypto Payment Queues
-                app.get(getQueueToken('crypto-payment-verification')),
-                app.get(getQueueToken('crypto-payment-forwarding')),
                 // Email & Notification Queues
                 app.get(getQueueToken(APP_BULL_QUEUES.EMAIL)),
                 app.get(getQueueToken(APP_BULL_QUEUES.NOTIFICATION)),
@@ -55,7 +52,7 @@ async function bootstrap(): Promise<void> {
             app.use('/admin/queues', serverAdapter.getRouter());
             logger.log('Bull Board available at /admin/queues');
             logger.log(
-                `Registered ${queues.length} queues: crypto-payment-verification, crypto-payment-forwarding, ${APP_BULL_QUEUES.EMAIL}, ${APP_BULL_QUEUES.NOTIFICATION}`
+                `Registered ${queues.length} queues: ${APP_BULL_QUEUES.EMAIL}, ${APP_BULL_QUEUES.NOTIFICATION}`
             );
         }
 

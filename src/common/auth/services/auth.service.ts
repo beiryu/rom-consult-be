@@ -23,7 +23,6 @@ import {
 import { HelperEncryptionService } from '../../helper/services/helper.encryption.service';
 import { IAuthUser } from '../../request/interfaces/request.interface';
 import { UserService } from 'src/modules/user/services/user.service';
-import { WalletService } from 'src/modules/wallet/services/wallet.service';
 import { TwoFactorDisableDto } from '../dtos/request/auth.2fa.disable.dto';
 import { TwoFactorSetupDto } from '../dtos/request/auth.2fa.setup.dto';
 import { TwoFactorVerifyLoginDto } from '../dtos/request/auth.2fa.verify-login.dto';
@@ -53,7 +52,6 @@ export class AuthService implements IAuthService {
         private readonly databaseService: DatabaseService,
         private readonly helperEncryptionService: HelperEncryptionService,
         private readonly userService: UserService,
-        private readonly walletService: WalletService,
         private readonly configService: ConfigService,
         @InjectQueue(APP_BULL_QUEUES.EMAIL)
         private emailQueue: Queue,
@@ -223,9 +221,6 @@ export class AuthService implements IAuthService {
                     userName: faker.internet.username(),
                 },
             });
-
-            // Create wallet for new user
-            await this.walletService.createWallet(createdUser.id);
 
             const tokens = await this.helperEncryptionService.createJwtTokens({
                 role: createdUser.role,

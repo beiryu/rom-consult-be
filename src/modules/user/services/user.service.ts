@@ -248,7 +248,6 @@ export class UserService implements IUserService {
                             },
                         },
                     },
-                    cryptoPayment: true,
                 },
                 orderBy: {
                     createdAt: 'desc',

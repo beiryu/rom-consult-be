@@ -42,7 +42,7 @@ export interface CommerceTotalsResult {
  * Calculate totals from line items (cart or order items with product price and quantity).
  *
  * @param items - Items with product (price, currency) and quantity
- * @returns totalAmount (string, 8 decimals for crypto), currency, and totalItems count
+ * @returns totalAmount (string, fixed to 8 decimals), currency, and totalItems count
  */
 export function calculateLineItemsTotals(
     items: CommerceLineItem[]
@@ -74,7 +74,7 @@ export function calculateLineItemsTotals(
     }
 
     return {
-        totalAmount: totalAmount.toFixed(8), // Support crypto decimals
+        totalAmount: totalAmount.toFixed(8),
         currency,
         totalItems,
     };

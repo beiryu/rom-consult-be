@@ -70,7 +70,6 @@ export class OrderPublicController {
             status: query.status,
             sortBy: query.sortBy,
             sortOrder: query.sortOrder,
-            cryptocurrency: query.cryptocurrency,
         });
     }
 
@@ -104,18 +103,4 @@ export class OrderPublicController {
         return this.deliveryService.getDeliveryContent(orderId, user.userId);
     }
 
-    @Post(':id/wallet-payment')
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Pay order with wallet balance' })
-    @DocResponse({
-        serialization: OrderResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'order.success.walletPaymentSuccess',
-    })
-    public async payWithWallet(
-        @AuthUser() user: IAuthUser,
-        @Param('id') orderId: string
-    ): Promise<OrderResponseDto> {
-        return this.orderService.payOrderWithWallet(orderId, user.userId);
-    }
 }

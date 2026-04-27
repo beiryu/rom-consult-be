@@ -6,7 +6,6 @@ import { DatabaseService } from 'src/common/database/services/database.service';
 import { HelperPaginationService } from 'src/common/helper/services/helper.pagination.service';
 import { ApiPaginatedDataDto } from 'src/common/response/dtos/response.paginated.dto';
 import { ApiGenericResponseDto } from 'src/common/response/dtos/response.generic.dto';
-import { WalletService } from 'src/modules/wallet/services/wallet.service';
 
 import { OrderCreateDto } from '../dtos/request/order.create.request';
 import { OrderStatusUpdateDto } from '../dtos/request/order.status-update.request';
@@ -28,7 +27,6 @@ export class OrderService implements IOrderService {
         private readonly databaseService: DatabaseService,
         private readonly paginationService: HelperPaginationService,
         private readonly deliveryService: OrderDeliveryService,
-        private readonly walletService: WalletService,
         private readonly logger: PinoLogger
     ) {
         this.logger.setContext(OrderService.name);
@@ -271,7 +269,7 @@ export class OrderService implements IOrderService {
                 return { order: newOrder, items: orderItems };
             });
 
-            // Fetch complete order with items and crypto payment
+            // Fetch complete order with items
             const completeOrder = await this.databaseService.order.findUnique({
                 where: { id: order.order.id },
                 include: {
@@ -291,7 +289,6 @@ export class OrderService implements IOrderService {
                             },
                         },
                     },
-                    cryptoPayment: true,
                 },
             });
 
@@ -305,10 +302,6 @@ export class OrderService implements IOrderService {
                 'Order created'
             );
 
-            // Note: Crypto payment creation is handled via separate endpoint
-            // POST /v1/crypto-payments/orders/:orderId
-            // This allows for better separation of concerns and error handling
-
             return completeOrder as unknown as OrderResponseDto;
         } catch (error) {
             if (error instanceof HttpException) {
@@ -317,112 +310,6 @@ export class OrderService implements IOrderService {
             this.logger.error(`Failed to create order: ${error.message}`);
             throw new HttpException(
                 'order.error.createOrderFailed',
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    async payOrderWithWallet(
-        orderId: string,
-        userId: string
-    ): Promise<OrderResponseDto> {
-        try {
-            const order = await this.databaseService.order.findFirst({
-                where: {
-                    id: orderId,
-                    userId,
-                    status: OrderStatus.PENDING,
-                    deletedAt: null,
-                },
-            });
-
-            if (!order) {
-                throw new HttpException(
-                    'order.error.orderNotFound',
-                    HttpStatus.NOT_FOUND
-                );
-            }
-
-            const totalAmount =
-                typeof order.totalAmount === 'string'
-                    ? parseFloat(order.totalAmount)
-                    : Number(order.totalAmount);
-
-            try {
-                await this.walletService.deductBalance(
-                    userId,
-                    totalAmount,
-                    `Purchase: ${order.orderNumber}`,
-                    order.id
-                );
-            } catch (error) {
-                if (
-                    error instanceof HttpException &&
-                    error.message === 'wallet.error.insufficientBalance'
-                ) {
-                    throw new HttpException(
-                        'order.error.insufficientWalletBalance',
-                        HttpStatus.BAD_REQUEST
-                    );
-                }
-                throw error;
-            }
-
-            const updatedOrder = await this.databaseService.$transaction(
-                async tx => {
-                    return tx.order.update({
-                        where: { id: orderId },
-                        data: {
-                            status: OrderStatus.COMPLETED,
-                            completedAt: new Date(),
-                        },
-                        include: {
-                            items: {
-                                include: {
-                                    product: {
-                                        include: {
-                                            category: true,
-                                            images: {
-                                                where: { deletedAt: null },
-                                                orderBy: [
-                                                    { isPrimary: 'desc' },
-                                                    { sortOrder: 'asc' },
-                                                ],
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                            cryptoPayment: true,
-                        },
-                    });
-                }
-            );
-
-            try {
-                await this.deliveryService.processInstantDelivery(orderId);
-            } catch (deliveryError) {
-                this.logger.warn(
-                    {
-                        orderId,
-                        error: deliveryError?.message,
-                    },
-                    'Failed to process instant delivery after wallet payment'
-                );
-            }
-
-            return updatedOrder as unknown as OrderResponseDto;
-        } catch (error) {
-            if (error instanceof HttpException) {
-                throw error;
-            }
-
-            this.logger.error(
-                { error, orderId, userId },
-                'Failed to pay order with wallet'
-            );
-            throw new HttpException(
-                'order.error.walletPaymentFailed',
                 HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
@@ -439,7 +326,6 @@ export class OrderService implements IOrderService {
             status?: OrderStatus;
             sortBy?: 'createdAt' | 'totalAmount';
             sortOrder?: 'asc' | 'desc';
-            cryptocurrency?: string;
         }
     ): Promise<ApiPaginatedDataDto<OrderResponseDto>> {
         try {
@@ -450,12 +336,6 @@ export class OrderService implements IOrderService {
 
             if (options?.status) {
                 where.status = options.status;
-            }
-
-            if (options?.cryptocurrency) {
-                where.cryptoPayment = {
-                    cryptocurrency: options.cryptocurrency,
-                };
             }
 
             const result =
@@ -484,7 +364,6 @@ export class OrderService implements IOrderService {
                                     },
                                 },
                             },
-                            cryptoPayment: true,
                             review: true,
                         },
                         orderBy: {
@@ -544,7 +423,6 @@ export class OrderService implements IOrderService {
                             },
                         },
                     },
-                    cryptoPayment: true,
                     review: true,
                 },
             });
@@ -634,7 +512,6 @@ export class OrderService implements IOrderService {
                             },
                         },
                     },
-                    cryptoPayment: true,
                 },
             });
 
@@ -678,7 +555,7 @@ export class OrderService implements IOrderService {
     }
 
     /**
-     * Refund order: update status to REFUNDED and refund amount to user wallet
+     * Refund order: update status to REFUNDED
      */
     async refundOrder(orderId: string): Promise<ApiGenericResponseDto> {
         try {
@@ -706,20 +583,6 @@ export class OrderService implements IOrderService {
             await this.updateOrderStatus(orderId, {
                 status: OrderStatus.REFUNDED,
             });
-
-            const totalAmount =
-                typeof order.totalAmount === 'string'
-                    ? parseFloat(order.totalAmount)
-                    : Number(order.totalAmount);
-
-            if (order.userId) {
-                await this.walletService.refundBalance(
-                    order.userId,
-                    totalAmount,
-                    `Refund for order ${order.orderNumber}`,
-                    order.id
-                );
-            }
 
             this.logger.info({ orderId }, 'Order refunded successfully');
 
@@ -755,7 +618,6 @@ export class OrderService implements IOrderService {
                 },
                 include: {
                     items: true,
-                    cryptoPayment: true,
                 },
             });
 
@@ -824,7 +686,6 @@ export class OrderService implements IOrderService {
                                     },
                                 },
                             },
-                            cryptoPayment: true,
                         },
                     });
                 }
@@ -901,7 +762,6 @@ export class OrderService implements IOrderService {
                                     },
                                 },
                             },
-                            cryptoPayment: true,
                         },
                         orderBy: { createdAt: 'desc' },
                     }

@@ -4,7 +4,6 @@
         "list": "Orders retrieved successfully",
         "orderFound": "Order retrieved successfully",
         "statusUpdated": "Order status updated successfully",
-        "walletPaymentSuccess": "Order paid successfully with wallet balance",
         "delivered": "Order delivered successfully",
         "refunded": "Order refunded successfully",
         "deliveryContent": "Delivery content retrieved successfully"
@@ -15,8 +14,6 @@
         "productInactive": "Product is not active",
         "insufficientStock": "Insufficient stock",
         "createOrderFailed": "Failed to create order",
-        "walletPaymentFailed": "Failed to process wallet payment",
-        "insufficientWalletBalance": "Insufficient wallet balance",
         "invalidTotal": "Order total is invalid",
         "getOrderHistoryFailed": "Failed to retrieve order history",
         "orderNotFound": "Order not found",
