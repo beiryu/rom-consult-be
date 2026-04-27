@@ -1,0 +1,589 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  userName    String    @unique
+  email       String    @unique
+  password    String
+  firstName   String?   @map("first_name")
+  lastName    String?   @map("last_name")
+  isVerified  Boolean   @default(false) @map("is_verified")
+  phone       String?
+  role        Role      @default(USER)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  avatar      String?
+  dateOfBirth DateTime? @map("date_of_birth")
+
+  // Store related fields
+  wallet          UserWallet?
+  orders          Order[] @relation("UserOrders")
+  cart            Cart?
+  supportTickets  SupportTicket[] @relation("UserTickets")
+  assignedTickets SupportTicket[] @relation("AssignedTickets")
+  ticketMessages  TicketMessage[]
+  reviews         OrderReview[]
+  isBanned        Boolean         @default(false) @map("is_banned")
+  bannedAt        DateTime?       @map("banned_at")
+  bannedReason    String?         @map("banned_reason")
+
+  // Two-factor authentication
+  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
+  twoFactorSecret  String? @map("two_factor_secret")
+
+  passwordResetOtp               String?   @map("password_reset_otp")
+  passwordResetOtpExpiry         DateTime? @map("password_reset_otp_expiry")
+  emailVerificationToken         String?   @map("email_verification_token")
+  emailVerificationTokenExpiry   DateTime? @map("email_verification_token_expiry")
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  MODERATOR
+  MANAGER
+  ADMIN
+  DEVELOPER
+}
+
+model ProductCategory {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  icon        String? // S3 key for category icon
+  isActive    Boolean   @default(true) @map("is_active")
+  sortOrder   Int       @default(0) @map("sort_order")
+  products    Product[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("product_categories")
+}
+
+// Product
+model Product {
+  id              String          @id @default(uuid())
+  name            String
+  slug            String          @unique
+  description     String          @db.Text
+  price           Decimal         @db.Decimal(20, 8) // Support crypto decimals (fallback when no variants)
+  currency        String          @default("USD") // Base currency
+  stockQuantity   Int             @default(0) @map("stock_quantity")
+  isActive        Boolean         @default(true) @map("is_active")
+  isFeatured      Boolean         @default(false) @map("is_featured")
+  sortOrder       Int             @default(0) @map("sort_order")
+  categoryId      String          @map("category_id")
+  category        ProductCategory @relation(fields: [categoryId], references: [id])
+  images          ProductImage[]
+  deliveryType    DeliveryType    @default(INSTANT) @map("delivery_type")
+  deliveryContent String?         @map("delivery_content") @db.Text // For instant delivery
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+
+  shortNotice     String?   @map("short_notice")
+  isHot           Boolean   @default(false) @map("is_hot")
+  isNew           Boolean   @default(false) @map("is_new")
+  isNFA           Boolean   @default(false) @map("is_nfa")
+  isRestocked     Boolean   @default(false) @map("is_restocked")
+  launchedAt      DateTime? @map("launched_at")
+  restockedAt     DateTime? @map("restocked_at")
+  countryOfOrigin String?   @map("country_of_origin")
+  redeemProcess   String?   @map("redeem_process") @db.Text
+  warrantyText    String?   @map("warranty_text") @db.Text
+
+  variants    ProductVariant[]
+  regions     ProductRegion[]
+  relatedFrom ProductRelated[] @relation("RelatedFrom")
+  relatedTo   ProductRelated[] @relation("RelatedTo")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([isActive])
+  @@map("products")
+}
+
+model ProductVariant {
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label         String
+  price         Decimal  @db.Decimal(20, 8)
+  currency      String   @default("USD")
+  stockQuantity Int      @default(0) @map("stock_quantity")
+  isActive      Boolean  @default(true) @map("is_active")
+  sortOrder     Int      @default(0) @map("sort_order")
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model ProductRegion {
+  id          String   @id @default(uuid())
+  productId   String   @map("product_id")
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label       String
+  countryCode String   @map("country_code")
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([productId, label])
+  @@index([productId])
+  @@map("product_regions")
+}
+
+model ProductRelated {
+  productId        String  @map("product_id")
+  relatedProductId String  @map("related_product_id")
+  product          Product @relation("RelatedFrom", fields: [productId], references: [id], onDelete: Cascade)
+  relatedProduct   Product @relation("RelatedTo", fields: [relatedProductId], references: [id], onDelete: Cascade)
+
+  @@id([productId, relatedProductId])
+  @@map("product_related")
+}
+
+enum DeliveryType {
+  INSTANT // Digital delivery (sent immediately)
+  MANUAL // Requires admin action
+  DOWNLOAD // File download link
+}
+
+// Product Images
+model ProductImage {
+  id        String    @id @default(uuid())
+  productId String    @map("product_id")
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  key       String // S3 key
+  url       String? // Optional cached URL
+  isPrimary Boolean   @default(false) @map("is_primary")
+  sortOrder Int       @default(0) @map("sort_order")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+// Shopping Cart
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique @map("user_id")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String   @map("cart_id")
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String   @map("product_id")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+
+  variantId     String?         @map("variant_id")
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  regionLabel   String          @default("") @map("region_label")
+  regionCountry String          @default("") @map("region_country")
+  unitPrice     Decimal?        @db.Decimal(20, 8) @map("unit_price")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([cartId])
+  @@index([variantId])
+  @@map("cart_items")
+}
+
+// Orders & Payments
+model Order {
+  id             String          @id @default(uuid())
+  orderNumber    String          @unique @map("order_number") // e.g., ORD-20260129-XXXXX
+  userId         String          @map("user_id")
+  user           User            @relation("UserOrders", fields: [userId], references: [id])
+  buyerProtection Boolean        @default(false) @map("buyer_protection")
+  buyerProtectionAmount Decimal  @default(0) @map("buyer_protection_amount") @db.Decimal(20, 8)
+  status         OrderStatus     @default(PENDING)
+  totalAmount    Decimal         @map("total_amount") @db.Decimal(20, 8)
+  currency       String // USD, BTC, ETH, etc.
+  cryptoPayment  CryptoPayment?
+  items          OrderItem[]
+  review         OrderReview?
+  supportTickets SupportTicket[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  completedAt    DateTime?       @map("completed_at")
+  cancelledAt    DateTime?       @map("cancelled_at")
+  deletedAt      DateTime?       @map("deleted_at")
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING // Awaiting payment
+  COMPLETED // Order delivered (payment confirmed)
+  CANCELLED // Order cancelled
+  REFUNDED // Payment refunded
+}
+
+model OrderReview {
+  id        String   @id @default(uuid())
+  orderId   String   @unique @map("order_id")
+  userId    String   @map("user_id")
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("order_reviews")
+}
+
+model OrderItem {
+  id               String    @id @default(uuid())
+  orderId          String    @map("order_id")
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId        String    @map("product_id")
+  product          Product   @relation(fields: [productId], references: [id])
+  quantity         Int
+  priceAtPurchase  Decimal   @map("price_at_purchase") @db.Decimal(20, 8)
+  deliveredContent String?   @map("delivered_content") @db.Text // Actual content delivered
+  deliveredAt      DateTime? @map("delivered_at")
+
+  variantId     String?         @map("variant_id")
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  variantLabel  String?         @map("variant_label")
+  regionLabel   String?         @map("region_label")
+  regionCountry String?         @map("region_country")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([orderId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+// Crypto Payment System
+model CryptoPayment {
+  id      String @id @default(uuid())
+  orderId String @unique @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Cryptocurrency info
+  cryptocurrency CryptoCurrency
+  network        String? // e.g., "mainnet", "ERC20", "BEP20", "TRC20"
+
+  // Payment address (generated from system HD wallet)
+  paymentAddress      String @map("payment_address")
+  derivationIndex     Int    @map("derivation_index")
+  derivationPath      String @map("derivation_path")
+  encryptedPrivateKey String @map("encrypted_private_key") @db.Text
+
+  // Amount info
+  amount       Decimal  @db.Decimal(30, 18) // Crypto amount (support 18 decimals for ETH)
+  amountUsd    Decimal  @map("amount_usd") @db.Decimal(20, 2) // USD value at creation
+  exchangeRate Decimal? @map("exchange_rate") @db.Decimal(20, 8) // Rate at payment time
+
+  // Platform wallet info
+  platformWalletAddress String @map("platform_wallet_address")
+
+  // Payment status
+  status PaymentStatus @default(PENDING)
+
+  // Transaction info
+  txHash                String? @map("tx_hash") // Incoming transaction hash
+  forwardTxHash         String? @map("forward_tx_hash") // Outgoing transaction hash
+  confirmations         Int     @default(0)
+  requiredConfirmations Int     @default(3) @map("required_confirmations")
+
+  // Timestamps
+  expiresAt   DateTime  @map("expires_at")
+  paidAt      DateTime? @map("paid_at")
+  confirmedAt DateTime? @map("confirmed_at")
+  forwardedAt DateTime? @map("forwarded_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Metadata
+  metadata Json? // Additional info (network fee, gas price, etc.)
+
+  @@index([paymentAddress])
+  @@index([status])
+  @@index([txHash])
+  @@index([cryptocurrency])
+  @@index([expiresAt])
+  @@map("crypto_payments")
+}
+
+enum CryptoCurrency {
+  BTC // Bitcoin
+  ETH // Ethereum
+  LTC // Litecoin
+  BCH // Bitcoin Cash
+  USDT_ERC20 // USDT on Ethereum
+  USDT_TRC20 // USDT on Tron
+  USDC_ERC20 // USDC on Ethereum
+}
+
+enum PaymentStatus {
+  PENDING // Waiting for payment
+  PAID // Payment detected (but not confirmed)
+  CONFIRMING // Waiting for confirmations
+  CONFIRMED // Payment confirmed (order can proceed)
+  FORWARDING // Forwarding to platform wallet
+  FORWARDED // Successfully forwarded
+  FORWARDING_FAILED // Forwarding to platform wallet failed
+  EXPIRED // Payment window expired (15 min)
+  FAILED // Payment processing failed
+}
+
+// System Wallet Index Tracker
+model SystemWalletIndex {
+  id             String         @id @default(uuid())
+  cryptocurrency CryptoCurrency @unique
+  nextIndex      Int            @default(0) @map("next_index")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@map("system_wallet_indexes")
+}
+
+// Crypto Exchange Rate Cache
+model CryptoExchangeRate {
+  id             String         @id @default(uuid())
+  cryptocurrency CryptoCurrency
+  fiatCurrency   String         @default("USD") @map("fiat_currency")
+  rate           Decimal        @db.Decimal(20, 8)
+  provider       String // "tatum", "kraken", etc.
+  expiresAt      DateTime       @map("expires_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@unique([cryptocurrency, fiatCurrency])
+  @@index([cryptocurrency])
+  @@index([expiresAt])
+  @@map("crypto_exchange_rates")
+}
+
+// User Wallet/Balance System
+model UserWallet {
+  id           String              @id @default(uuid())
+  userId       String              @unique @map("user_id")
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance      Decimal             @default(0) @db.Decimal(20, 2) // USD balance
+  transactions WalletTransaction[]
+  topUps       WalletTopUp[]
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  @@map("user_wallets")
+}
+
+model WalletTopUp {
+  id                    String         @id @default(uuid())
+  walletId              String         @map("wallet_id")
+  wallet                UserWallet     @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  cryptocurrency        CryptoCurrency
+  network               String?
+  paymentAddress        String         @map("payment_address")
+  derivationIndex       Int            @map("derivation_index")
+  derivationPath        String         @map("derivation_path")
+  encryptedPrivateKey   String         @map("encrypted_private_key")
+  amount                Decimal        @db.Decimal(30, 18)
+  amountUsd             Decimal        @map("amount_usd") @db.Decimal(20, 2)
+  exchangeRate          Decimal?       @map("exchange_rate") @db.Decimal(20, 8)
+  platformWalletAddress String         @map("platform_wallet_address")
+  status                PaymentStatus  @default(PENDING)
+  txHash                String?        @map("tx_hash")
+  forwardTxHash         String?        @map("forward_tx_hash")
+  confirmations         Int            @default(0)
+  requiredConfirmations Int            @default(3) @map("required_confirmations")
+  expiresAt             DateTime       @map("expires_at")
+  paidAt                DateTime?      @map("paid_at")
+  confirmedAt           DateTime?      @map("confirmed_at")
+  forwardedAt           DateTime?      @map("forwarded_at")
+  metadata              Json?
+  creditedAt            DateTime?      @map("credited_at")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @updatedAt @map("updated_at")
+
+  @@index([walletId])
+  @@index([status])
+  @@index([paymentAddress])
+  @@map("wallet_topups")
+}
+
+model WalletTransaction {
+  id          String                @id @default(uuid())
+  walletId    String                @map("wallet_id")
+  wallet      UserWallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type        WalletTransactionType
+  amount      Decimal               @db.Decimal(20, 2)
+  balance     Decimal               @db.Decimal(20, 2) // Balance after transaction
+  description String
+  referenceId String?               @map("reference_id") // Order ID, etc.
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  @@index([walletId])
+  @@index([type])
+  @@map("wallet_transactions")
+}
+
+enum WalletTransactionType {
+  DEPOSIT // Add funds
+  PURCHASE // Product purchase
+  REFUND // Order refund
+  ADMIN_ADJUST // Admin adjustment
+}
+
+// Support Ticket System
+model SupportTicket {
+  id           String          @id @default(uuid())
+  ticketNumber String          @unique @map("ticket_number") // e.g., TKT-20260129-XXXXX
+  orderId      String?         @map("order_id")
+  order        Order?          @relation(fields: [orderId], references: [id])
+  userId       String          @map("user_id")
+  user         User            @relation("UserTickets", fields: [userId], references: [id])
+  subject      String
+  status       TicketStatus    @default(OPEN)
+  priority     TicketPriority  @default(MEDIUM)
+  messages     TicketMessage[]
+  assignedToId String?         @map("assigned_to_id")
+  assignedTo   User?           @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+  closedAt     DateTime?       @map("closed_at")
+  deletedAt    DateTime?       @map("deleted_at")
+
+  @@index([userId])
+  @@index([orderId])
+  @@index([status])
+  @@index([assignedToId])
+  @@map("support_tickets")
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_USER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model TicketMessage {
+  id        String        @id @default(uuid())
+  ticketId  String        @map("ticket_id")
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String        @map("user_id")
+  user      User          @relation(fields: [userId], references: [id])
+  message   String        @db.Text
+  isStaff   Boolean       @default(false) @map("is_staff")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+// CMS Content System
+model CmsContent {
+  id          String      @id @default(uuid())
+  key         String      @unique // faq, terms, privacy, etc.
+  type        ContentType
+  title       String
+  content     String      @db.Text
+  isPublished Boolean     @default(true) @map("is_published")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  @@map("cms_contents")
+}
+
+enum ContentType {
+  FAQ
+  TERMS
+  PRIVACY
+  LANDING_PAGE
+  ABOUT
+}
+
+// System Settings
+model SystemSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique // telegram_channel, telegram_bot_token, etc.
+  value     String   @db.Text
+  category  String // social, payment, general, etc.
+  isPublic  Boolean  @default(false) @map("is_public") // Can be exposed to frontend
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("system_settings")
+}
+
+// Analytics/Statistics
+model Analytics {
+  id        String       @id @default(uuid())
+  type      AnalyticType
+  date      DateTime     @db.Date
+  key       String // product_id, user_id, category_id, etc.
+  value     Float
+  metadata  Json? // Additional data
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  @@unique([type, date, key])
+  @@index([type, date])
+  @@map("analytics")
+}
+
+enum AnalyticType {
+  DAILY_SALES
+  PRODUCT_VIEWS
+  CATEGORY_VIEWS
+  REVENUE
+  USER_SIGNUPS
+  ORDERS_COUNT
+}
