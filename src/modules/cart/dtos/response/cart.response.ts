@@ -48,15 +48,6 @@ export class CartItemResponseDto implements CartItem {
     })
     @Expose()
     @IsOptional()
-    @IsUUID()
-    variantId: string | null;
-
-    @ApiPropertyOptional({
-        example: null,
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
     @Type(() => String)
     unitPrice: Prisma.Decimal | null;
 

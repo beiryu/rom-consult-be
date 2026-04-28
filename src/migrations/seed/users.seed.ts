@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { Command } from 'nestjs-command';
 import { PinoLogger } from 'nestjs-pino';
@@ -44,12 +43,7 @@ export class UsersSeedService {
                 password,
                 firstName: 'Seed',
                 lastName: 'User',
-                phone: '+10000000000',
-                avatar: 'seed/avatars/demo-user.png',
-                role: Role.USER,
                 isVerified: true,
-                isBanned: false,
-                twoFactorEnabled: false,
             },
         });
 

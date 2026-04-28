@@ -1,11 +1,12 @@
 import { Body, Controller, Get, HttpStatus, Param, Patch, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApplicationStatus, Role } from '@prisma/client';
+import { ApplicationStatus } from '@prisma/client';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 import { DocPaginatedResponse } from 'src/common/doc/decorators/doc.paginated.decorator';
 import { DocResponse } from 'src/common/doc/decorators/doc.response.decorator';
 import { AllowedRoles } from 'src/common/request/decorators/request.role.decorator';
+import { Role } from 'src/common/request/enums/role.enum';
 import { QueryTransformPipe } from 'src/common/request/pipes/query-transform.pipe';
 import { ApiPaginatedDataDto } from 'src/common/response/dtos/response.paginated.dto';
 

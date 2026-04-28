@@ -1,9 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { faker } from '@faker-js/faker';
 import {
     IsArray,
     IsInt,
-    IsOptional,
     IsUUID,
     Min,
     ValidateNested,
@@ -28,12 +27,6 @@ export class CartSyncItemDto {
     @Min(1)
     quantity: number;
 
-    @ApiPropertyOptional({
-        description: 'Selected product variant',
-    })
-    @IsOptional()
-    @IsUUID()
-    variantId?: string;
 }
 
 export class CartSyncDto {

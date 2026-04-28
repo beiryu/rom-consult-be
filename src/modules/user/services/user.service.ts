@@ -139,26 +139,10 @@ export class UserService implements IUserService {
                 );
             }
 
-            if (user.isBanned) {
-                throw new HttpException(
-                    'user.error.userAlreadyBanned',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            await this.databaseService.user.update({
-                where: { id: userId },
-                data: {
-                    isBanned: true,
-                    bannedAt: new Date(),
-                    bannedReason: data.reason || null,
-                },
-            });
-
-            return {
-                success: true,
-                message: 'user.success.userBanned',
-            };
+            throw new HttpException(
+                'user.error.banNotSupported',
+                HttpStatus.BAD_REQUEST
+            );
         } catch (error) {
             if (error instanceof HttpException) {
                 throw error;
@@ -183,26 +167,10 @@ export class UserService implements IUserService {
                 );
             }
 
-            if (!user.isBanned) {
-                throw new HttpException(
-                    'user.error.userNotBanned',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            await this.databaseService.user.update({
-                where: { id: userId },
-                data: {
-                    isBanned: false,
-                    bannedAt: null,
-                    bannedReason: null,
-                },
-            });
-
-            return {
-                success: true,
-                message: 'user.success.userUnbanned',
-            };
+            throw new HttpException(
+                'user.error.unbanNotSupported',
+                HttpStatus.BAD_REQUEST
+            );
         } catch (error) {
             if (error instanceof HttpException) {
                 throw error;
@@ -221,7 +189,6 @@ export class UserService implements IUserService {
             const orders = await this.databaseService.order.findMany({
                 where: {
                     userId,
-                    deletedAt: null,
                 },
                 include: {
                     items: {

@@ -1,6 +1,5 @@
 import {
     Body,
-    BadRequestException,
     Controller,
     Delete,
     Get,
@@ -11,7 +10,7 @@ import {
     Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Role } from 'src/common/request/enums/role.enum';
 
 import { ApiPaginatedDataDto } from 'src/common/response/dtos/response.paginated.dto';
 import { DocResponse } from 'src/common/doc/decorators/doc.response.decorator';
@@ -28,11 +27,6 @@ import { ProductUpdateDto } from '../dtos/request/product.update.request';
 import { ProductSearchDto } from '../dtos/request/product.search.request';
 import { ProductListQueryDto } from '../dtos/request/product.list.request';
 import { CategoryListQueryDto } from '../dtos/request/category.list.request';
-import {
-    AdminProductImageCreateDto,
-    AdminProductVariantCreateDto,
-    AdminProductVariantUpdateDto,
-} from '../dtos/request/product.admin.subresource.request';
 import {
     ProductResponseDto,
     ProductListResponseDto,
@@ -79,7 +73,7 @@ export class ProductAdminController {
     public async list(
         @Query(
             new QueryTransformPipe({
-                booleanFields: ['isActive', 'isFeatured'],
+                booleanFields: ['isActive'],
             })
         )
         query: ProductListQueryDto
@@ -90,7 +84,6 @@ export class ProductAdminController {
             categoryId: query.categoryId,
             categorySlug: query.categorySlug,
             isActive: query.isActive,
-            isFeatured: query.isFeatured,
         });
     }
 
@@ -205,57 +198,6 @@ export class ProductAdminController {
         return this.categoryService.toggleActive(id);
     }
 
-    // Variants / regions / related
-
-    @Post(':id/variants')
-    @AllowedRoles([Role.ADMIN, Role.MANAGER])
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Add product variant' })
-    @DocResponse({
-        serialization: ProductResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'product.success.updated',
-    })
-    public async addVariant(
-        @Param('id') productId: string,
-        @Body() payload: AdminProductVariantCreateDto
-    ): Promise<ProductResponseDto> {
-        return this.productService.addVariant(productId, payload);
-    }
-
-    @Put(':id/variants/:variantId')
-    @AllowedRoles([Role.ADMIN, Role.MANAGER])
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Update product variant' })
-    @DocResponse({
-        serialization: ProductResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'product.success.updated',
-    })
-    public async updateVariant(
-        @Param('id') productId: string,
-        @Param('variantId') variantId: string,
-        @Body() payload: AdminProductVariantUpdateDto
-    ): Promise<ProductResponseDto> {
-        return this.productService.updateVariant(productId, variantId, payload);
-    }
-
-    @Delete(':id/variants/:variantId')
-    @AllowedRoles([Role.ADMIN, Role.MANAGER])
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Remove product variant (soft delete)' })
-    @DocResponse({
-        serialization: ProductResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'product.success.updated',
-    })
-    public async deleteVariant(
-        @Param('id') productId: string,
-        @Param('variantId') variantId: string
-    ): Promise<ProductResponseDto> {
-        return this.productService.deleteVariant(productId, variantId);
-    }
-
     // Product by ID and CRUD
 
     @Get(':id')
@@ -316,74 +258,4 @@ export class ProductAdminController {
         return this.productService.toggleActive(id);
     }
 
-    @Put(':id/toggle-featured')
-    @AllowedRoles([Role.ADMIN, Role.MANAGER])
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Toggle product featured status' })
-    @DocResponse({
-        serialization: ProductResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'product.success.featuredToggled',
-    })
-    public async toggleFeatured(
-        @Param('id') id: string
-    ): Promise<ProductResponseDto> {
-        return this.productService.toggleFeatured(id);
-    }
-
-    @Post(':id/images')
-    @AllowedRoles([Role.ADMIN, Role.MANAGER])
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Add image to product' })
-    @DocResponse({
-        serialization: ProductResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'product.success.imageAdded',
-    })
-    public async addImage(
-        @Param('id') productId: string,
-        @Body() payload: AdminProductImageCreateDto
-    ): Promise<ProductResponseDto> {
-        const imageKey = payload.key ?? payload.imageKey;
-        if (!imageKey) {
-            throw new BadRequestException('imageKey or key is required');
-        }
-        return this.productService.addImage(
-            productId,
-            imageKey,
-            payload.isPrimary ?? false
-        );
-    }
-
-    @Delete(':id/images/:imageId')
-    @AllowedRoles([Role.ADMIN, Role.MANAGER])
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Remove image from product' })
-    @DocResponse({
-        serialization: ProductResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'product.success.imageRemoved',
-    })
-    public async removeImage(
-        @Param('id') productId: string,
-        @Param('imageId') imageId: string
-    ): Promise<ProductResponseDto> {
-        return this.productService.removeImage(productId, imageId);
-    }
-
-    @Put(':id/images/:imageId/primary')
-    @AllowedRoles([Role.ADMIN, Role.MANAGER])
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Set image as primary' })
-    @DocResponse({
-        serialization: ProductResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'product.success.primaryImageSet',
-    })
-    public async setPrimaryImage(
-        @Param('id') productId: string,
-        @Param('imageId') imageId: string
-    ): Promise<ProductResponseDto> {
-        return this.productService.setPrimaryImage(productId, imageId);
-    }
 }

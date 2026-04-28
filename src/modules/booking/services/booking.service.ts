@@ -41,7 +41,7 @@ export class BookingService {
         data: BookingCreateDto
     ): Promise<BookingResponseDto> {
         const product = await this.databaseService.product.findFirst({
-            where: { id: data.productId, isActive: true, deletedAt: null },
+            where: { id: data.productId, isActive: true },
         });
         if (!product) {
             throw new HttpException('booking.error.productNotFound', HttpStatus.NOT_FOUND);
@@ -54,7 +54,6 @@ export class BookingService {
                 bookingRef,
                 userId,
                 productId: data.productId,
-                variantLabel: data.variantLabel,
                 platform: data.platform,
                 scheduledAt: new Date(data.scheduledAt),
             },

@@ -9,13 +9,13 @@ import {
     Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 
 import { ApiPaginatedDataDto } from 'src/common/response/dtos/response.paginated.dto';
 import { DocResponse } from 'src/common/doc/decorators/doc.response.decorator';
 import { DocPaginatedResponse } from 'src/common/doc/decorators/doc.paginated.decorator';
 import { DocGenericResponse } from 'src/common/doc/decorators/doc.generic.decorator';
 import { AllowedRoles } from 'src/common/request/decorators/request.role.decorator';
+import { Role } from 'src/common/request/enums/role.enum';
 import { QueryTransformPipe } from 'src/common/request/pipes/query-transform.pipe';
 import { ApiGenericResponseDto } from 'src/common/response/dtos/response.generic.dto';
 

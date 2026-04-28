@@ -5,7 +5,7 @@ import {
     Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@prisma/client';
+import { Role } from '../enums/role.enum';
 
 import { ROLES_DECORATOR_KEY } from '../constants/request.constant';
 

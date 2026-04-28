@@ -50,25 +50,6 @@ export class OrderItemResponseDto implements OrderItem {
     @Type(() => String)
     priceAtPurchase: Prisma.Decimal; // Prisma Decimal type
 
-    @ApiPropertyOptional({
-        example: null,
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsUUID()
-    variantId: string | null;
-
-    @ApiPropertyOptional({
-        example: '$50 Points | Fully Unlocked',
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    variantLabel: string | null;
-
-
     @ApiProperty({
         example: faker.date.past().toISOString(),
     })
@@ -168,15 +149,6 @@ export class OrderResponseDto {
     @IsOptional()
     @IsDate()
     cancelledAt: Date | null;
-
-    @ApiPropertyOptional({
-        example: faker.date.past().toISOString(),
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsDate()
-    deletedAt: Date | null;
 
     @ApiPropertyOptional({
         type: [OrderItemResponseDto],

@@ -90,25 +90,6 @@ export class OrderService implements IOrderService {
                 );
             }
 
-            if (item.variantId) {
-                const variant =
-                    await this.databaseService.productVariant.findFirst({
-                        where: {
-                            id: item.variantId,
-                            productId: item.productId,
-                            deletedAt: null,
-                            isActive: true,
-                        },
-                    });
-
-                if (!variant) {
-                    throw new HttpException(
-                        `order.error.variantInvalid: ${product.name}`,
-                        HttpStatus.BAD_REQUEST
-                    );
-                }
-
-            }
         }
     }
 
@@ -132,13 +113,6 @@ export class OrderService implements IOrderService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { deletedAt: null },
-                                        orderBy: [
-                                            { isPrimary: 'desc' },
-                                            { sortOrder: 'asc' },
-                                        ],
-                                    },
                                 },
                             },
                         },
@@ -197,22 +171,12 @@ export class OrderService implements IOrderService {
                             ? cartItem.unitPrice.toString()
                             : basePrice;
 
-                    let variantLabel: string | null = null;
-                    if (cartItem.variantId) {
-                        const v = await tx.productVariant.findUnique({
-                            where: { id: cartItem.variantId },
-                        });
-                        variantLabel = v?.label ?? null;
-                    }
-
                     const orderItem = await tx.orderItem.create({
                         data: {
                             orderId: newOrder.id,
                             productId: cartItem.productId,
                             quantity: cartItem.quantity,
                             priceAtPurchase,
-                            variantId: cartItem.variantId,
-                            variantLabel,
                         },
                     });
 
@@ -236,13 +200,6 @@ export class OrderService implements IOrderService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { deletedAt: null },
-                                        orderBy: [
-                                            { isPrimary: 'desc' },
-                                            { sortOrder: 'asc' },
-                                        ],
-                                    },
                                 },
                             },
                         },
@@ -289,7 +246,6 @@ export class OrderService implements IOrderService {
         try {
             const where: any = {
                 userId,
-                deletedAt: null,
             };
 
             if (options?.status) {
@@ -311,13 +267,6 @@ export class OrderService implements IOrderService {
                                     product: {
                                         include: {
                                             category: true,
-                                            images: {
-                                                where: { deletedAt: null },
-                                                orderBy: [
-                                                    { isPrimary: 'desc' },
-                                                    { sortOrder: 'asc' },
-                                                ],
-                                            },
                                         },
                                     },
                                 },
@@ -352,7 +301,6 @@ export class OrderService implements IOrderService {
             const order = await this.databaseService.order.findFirst({
                 where: {
                     id: orderId,
-                    deletedAt: null,
                 },
                 include: {
                     user: {
@@ -369,13 +317,6 @@ export class OrderService implements IOrderService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { deletedAt: null },
-                                        orderBy: [
-                                            { isPrimary: 'desc' },
-                                            { sortOrder: 'asc' },
-                                        ],
-                                    },
                                 },
                             },
                         },
@@ -423,7 +364,6 @@ export class OrderService implements IOrderService {
             const order = await this.databaseService.order.findFirst({
                 where: {
                     id: orderId,
-                    deletedAt: null,
                 },
             });
 
@@ -457,13 +397,6 @@ export class OrderService implements IOrderService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { deletedAt: null },
-                                        orderBy: [
-                                            { isPrimary: 'desc' },
-                                            { sortOrder: 'asc' },
-                                        ],
-                                    },
                                 },
                             },
                         },
@@ -516,7 +449,7 @@ export class OrderService implements IOrderService {
     async refundOrder(orderId: string): Promise<ApiGenericResponseDto> {
         try {
             const order = await this.databaseService.order.findFirst({
-                where: { id: orderId, deletedAt: null },
+                where: { id: orderId },
             });
 
             if (!order) {
@@ -570,7 +503,6 @@ export class OrderService implements IOrderService {
                 where: {
                     id: orderId,
                     userId,
-                    deletedAt: null,
                 },
                 include: {
                     items: true,
@@ -608,13 +540,6 @@ export class OrderService implements IOrderService {
                                     product: {
                                         include: {
                                             category: true,
-                                            images: {
-                                                where: { deletedAt: null },
-                                                orderBy: [
-                                                    { isPrimary: 'desc' },
-                                                    { sortOrder: 'asc' },
-                                                ],
-                                            },
                                         },
                                     },
                                 },
@@ -648,9 +573,7 @@ export class OrderService implements IOrderService {
         userId?: string;
     }): Promise<ApiPaginatedDataDto<OrderDetailResponseDto>> {
         try {
-            const where: any = {
-                deletedAt: null,
-            };
+            const where: any = {};
 
             if (options?.status) {
                 where.status = options.status;
@@ -684,13 +607,6 @@ export class OrderService implements IOrderService {
                                     product: {
                                         include: {
                                             category: true,
-                                            images: {
-                                                where: { deletedAt: null },
-                                                orderBy: [
-                                                    { isPrimary: 'desc' },
-                                                    { sortOrder: 'asc' },
-                                                ],
-                                            },
                                         },
                                     },
                                 },

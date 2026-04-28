@@ -67,7 +67,6 @@ export class UserPublicController {
         return this.userService.deleteUser(
             user.userId,
             user.userId,
-            user.role,
             payload.password
         );
     }

@@ -20,18 +20,16 @@ export class CartService implements ICartService {
     }
 
     /**
-     * Validate product (and optional variant) before adding to cart.
+     * Validate product before adding to cart.
      * Returns unit price snapshot for the line.
      */
     private async validateProductLine(
         productId: string,
-        quantity: number,
-        variantId?: string | null
+        quantity: number
     ): Promise<{ unitPrice: string }> {
         const product = await this.databaseService.product.findFirst({
             where: {
                 id: productId,
-                deletedAt: null,
             },
         });
 
@@ -47,33 +45,6 @@ export class CartService implements ICartService {
                 'cart.error.productInactive',
                 HttpStatus.BAD_REQUEST
             );
-        }
-
-        if (variantId) {
-            const variant = await this.databaseService.productVariant.findFirst(
-                {
-                    where: {
-                        id: variantId,
-                        productId,
-                        deletedAt: null,
-                        isActive: true,
-                    },
-                }
-            );
-
-            if (!variant) {
-                throw new HttpException(
-                    'cart.error.variantNotFound',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            return {
-                unitPrice:
-                    typeof variant.price === 'string'
-                        ? variant.price
-                        : variant.price.toString(),
-            };
         }
 
         return {
@@ -97,13 +68,6 @@ export class CartService implements ICartService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { deletedAt: null },
-                                        orderBy: [
-                                            { isPrimary: 'desc' },
-                                            { sortOrder: 'asc' },
-                                        ],
-                                    },
                                 },
                             },
                         },
@@ -123,13 +87,6 @@ export class CartService implements ICartService {
                                 product: {
                                     include: {
                                         category: true,
-                                        images: {
-                                            where: { deletedAt: null },
-                                            orderBy: [
-                                                { isPrimary: 'desc' },
-                                                { sortOrder: 'asc' },
-                                            ],
-                                        },
                                     },
                                 },
                             },
@@ -174,8 +131,7 @@ export class CartService implements ICartService {
         try {
             const { unitPrice } = await this.validateProductLine(
                 data.productId,
-                data.quantity,
-                data.variantId
+                data.quantity
             );
 
             // Get or create cart
@@ -186,7 +142,6 @@ export class CartService implements ICartService {
                 where: {
                     cartId: cart.id,
                     productId: data.productId,
-                    variantId: data.variantId ?? null,
                 },
                 include: {
                     product: true,
@@ -199,8 +154,7 @@ export class CartService implements ICartService {
 
                 await this.validateProductLine(
                     data.productId,
-                    newQuantity,
-                    data.variantId
+                    newQuantity
                 );
 
                 await this.databaseService.cartItem.update({
@@ -216,7 +170,6 @@ export class CartService implements ICartService {
                         cartId: cart.id,
                         productId: data.productId,
                         quantity: data.quantity,
-                        variantId: data.variantId ?? null,
                         unitPrice,
                     },
                 });
@@ -269,8 +222,7 @@ export class CartService implements ICartService {
             // Validate product and stock
             await this.validateProductLine(
                 cartItem.productId,
-                data.quantity,
-                cartItem.variantId
+                data.quantity
             );
 
             // Update quantity
@@ -374,8 +326,7 @@ export class CartService implements ICartService {
                 data.items.map(async item => {
                     const { unitPrice } = await this.validateProductLine(
                         item.productId,
-                        item.quantity,
-                        item.variantId
+                        item.quantity
                     );
 
                     return {
@@ -396,7 +347,6 @@ export class CartService implements ICartService {
                             cartId: cart.id,
                             productId: item.productId,
                             quantity: item.quantity,
-                            variantId: item.variantId ?? null,
                             unitPrice: item.unitPrice,
                         })),
                     });

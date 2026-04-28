@@ -25,12 +25,6 @@ export class BookingResponseDto implements Booking {
     @IsUUID()
     productId: string;
 
-    @ApiPropertyOptional({ example: 'Bronze', nullable: true })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    variantLabel: string | null;
-
     @ApiPropertyOptional({ example: 'zoom', nullable: true })
     @Expose()
     @IsOptional()

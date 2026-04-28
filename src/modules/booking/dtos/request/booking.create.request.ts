@@ -7,12 +7,6 @@ export class BookingCreateDto {
     @IsUUID()
     productId: string;
 
-    @ApiPropertyOptional({ example: 'Bronze' })
-    @IsOptional()
-    @IsString()
-    @MaxLength(50)
-    variantLabel?: string;
-
     @ApiPropertyOptional({ example: 'zoom' })
     @IsOptional()
     @IsString()

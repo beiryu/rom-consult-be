@@ -47,7 +47,6 @@ export class ProductPublicController {
             categoryId: query.categoryId,
             categorySlug: query.categorySlug,
             isActive: query.isActive ?? true,
-            isFeatured: query.isFeatured,
         });
     }
 
