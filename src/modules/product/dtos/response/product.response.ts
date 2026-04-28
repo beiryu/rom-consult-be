@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { faker } from '@faker-js/faker';
-import { DeliveryType, Prisma, Product, ProductImage } from '@prisma/client';
+import { Prisma, Product, ProductImage } from '@prisma/client';
 import { Expose, Type } from 'class-transformer';
 import {
     IsString,
@@ -9,7 +9,6 @@ import {
     IsDate,
     IsOptional,
     IsUUID,
-    IsEnum,
     IsArray,
     ValidateNested,
 } from 'class-validator';
@@ -111,11 +110,6 @@ export class ProductVariantResponseDto {
     @IsString()
     currency: string;
 
-    @ApiProperty({ example: 10 })
-    @Expose()
-    @IsInt()
-    stockQuantity: number;
-
     @ApiProperty({ example: true })
     @Expose()
     @IsBoolean()
@@ -131,38 +125,6 @@ export class ProductVariantResponseDto {
     @IsOptional()
     @IsDate()
     deletedAt: Date | null;
-}
-
-export class ProductRegionResponseDto {
-    @ApiProperty({ example: faker.string.uuid() })
-    @Expose()
-    @IsUUID()
-    id: string;
-
-    @ApiProperty({ example: faker.string.uuid() })
-    @Expose()
-    @IsUUID()
-    productId: string;
-
-    @ApiProperty({ example: 'AB' })
-    @Expose()
-    @IsString()
-    label: string;
-
-    @ApiProperty({ example: 'CA' })
-    @Expose()
-    @IsString()
-    countryCode: string;
-
-    @ApiProperty({ example: true })
-    @Expose()
-    @IsBoolean()
-    isActive: boolean;
-
-    @ApiProperty({ example: 0 })
-    @Expose()
-    @IsInt()
-    sortOrder: number;
 }
 
 export class ProductResponseDto implements Product {
@@ -209,13 +171,6 @@ export class ProductResponseDto implements Product {
     currency: string;
 
     @ApiProperty({
-        example: 100,
-    })
-    @Expose()
-    @IsInt()
-    stockQuantity: number;
-
-    @ApiProperty({
         example: true,
     })
     @Expose()
@@ -241,78 +196,25 @@ export class ProductResponseDto implements Product {
     @IsUUID()
     categoryId: string;
 
-    @ApiProperty({
-        enum: DeliveryType,
-        example: DeliveryType.INSTANT,
-    })
-    @Expose()
-    @IsEnum(DeliveryType)
-    deliveryType: DeliveryType;
-
-    @ApiPropertyOptional({
-        example: 'Your product key: ABC123XYZ',
-        nullable: true,
-    })
+    @ApiPropertyOptional({ type: [String], nullable: true })
     @Expose()
     @IsOptional()
-    @IsString()
-    deliveryContent: string | null;
+    features: Prisma.JsonValue | null;
 
-    @ApiPropertyOptional({ nullable: true })
+    @ApiPropertyOptional({ type: [String], nullable: true })
     @Expose()
     @IsOptional()
-    @IsString()
-    shortNotice: string | null;
+    included: Prisma.JsonValue | null;
 
-    @ApiProperty({ example: false })
-    @Expose()
-    @IsBoolean()
-    isHot: boolean;
-
-    @ApiProperty({ example: false })
-    @Expose()
-    @IsBoolean()
-    isNew: boolean;
-
-    @ApiProperty({ example: false })
-    @Expose()
-    @IsBoolean()
-    isNFA: boolean;
-
-    @ApiProperty({ example: false })
-    @Expose()
-    @IsBoolean()
-    isRestocked: boolean;
-
-    @ApiPropertyOptional({ nullable: true })
+    @ApiPropertyOptional({ type: [Object], nullable: true })
     @Expose()
     @IsOptional()
-    @IsDate()
-    launchedAt: Date | null;
+    sessionMeta: Prisma.JsonValue | null;
 
-    @ApiPropertyOptional({ nullable: true })
+    @ApiPropertyOptional({ type: [Object], nullable: true })
     @Expose()
     @IsOptional()
-    @IsDate()
-    restockedAt: Date | null;
-
-    @ApiPropertyOptional({ nullable: true })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    countryOfOrigin: string | null;
-
-    @ApiPropertyOptional({ nullable: true })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    redeemProcess: string | null;
-
-    @ApiPropertyOptional({ nullable: true })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    warrantyText: string | null;
+    howItWorks: Prisma.JsonValue | null;
 
     @ApiProperty({
         example: faker.date.past().toISOString(),
@@ -366,15 +268,6 @@ export class ProductResponseDto implements Product {
     @Type(() => ProductVariantResponseDto)
     variants?: ProductVariantResponseDto[];
 
-    @ApiPropertyOptional({
-        type: [ProductRegionResponseDto],
-    })
-    @Expose()
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ProductRegionResponseDto)
-    regions?: ProductRegionResponseDto[];
 }
 
 export class ProductListResponseDto extends ProductResponseDto {
@@ -414,15 +307,15 @@ export class ProductListResponseDto extends ProductResponseDto {
     @IsString()
     fromPrice: string;
 
-    @ApiProperty({
-        description: 'Display tags derived from flags',
-        example: ['Hot', 'New'],
+    @ApiPropertyOptional({
+        description: 'Display tags derived from metadata',
         type: [String],
     })
     @Expose()
+    @IsOptional()
     @IsArray()
     @IsString({ each: true })
-    tags: string[];
+    tags?: string[];
 }
 
 export class ProductDetailResponseDto extends ProductListResponseDto {
@@ -445,23 +338,5 @@ export class ProductDetailResponseDto extends ProductListResponseDto {
     @Type(() => ProductVariantResponseDto)
     variants?: ProductVariantResponseDto[];
 
-    @ApiPropertyOptional({
-        type: [ProductRegionResponseDto],
-    })
-    @Expose()
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ProductRegionResponseDto)
-    regions?: ProductRegionResponseDto[];
-
-    @ApiPropertyOptional({
-        type: [ProductListResponseDto],
-    })
-    @Expose()
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ProductListResponseDto)
-    related?: ProductListResponseDto[];
+    // Reserved for future linked services.
 }

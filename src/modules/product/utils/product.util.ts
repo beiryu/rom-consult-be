@@ -64,20 +64,6 @@ export function computeFromPrice(
     return min ? min.toFixed(8) : decimalToString(basePrice);
 }
 
-export function buildProductTags(product: {
-    isHot: boolean;
-    isNew: boolean;
-    isNFA: boolean;
-}): string[] {
-    const tags: string[] = [];
-    if (product.isHot) {
-        tags.push('Hot');
-    }
-    if (product.isNew) {
-        tags.push('New');
-    }
-    if (product.isNFA) {
-        tags.push('NFA');
-    }
-    return tags;
+export function buildProductTags(): string[] {
+    return [];
 }

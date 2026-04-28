@@ -50,32 +50,6 @@ export class OrderDeliveryService implements IOrderDeliveryService {
             }
 
             const deliveryItems = [];
-            const now = new Date();
-
-            // Process each item
-            for (const item of order.items) {
-                // With DeliveryType always INSTANT, simply deliver any undelivered items
-                if (!item.deliveredContent) {
-                    // Use product's delivery content
-                    const content =
-                        item.product.deliveryContent ||
-                        'Your product has been delivered.';
-
-                    await this.databaseService.orderItem.update({
-                        where: { id: item.id },
-                        data: {
-                            deliveredContent: content,
-                            deliveredAt: now,
-                        },
-                    });
-
-                    deliveryItems.push({
-                        itemId: item.id,
-                        productName: item.product.name,
-                        content,
-                    });
-                }
-            }
 
             // All items should be delivered when order is COMPLETED
             // Status remains COMPLETED
@@ -154,51 +128,9 @@ export class OrderDeliveryService implements IOrderDeliveryService {
                 );
             }
 
-            const now = new Date();
-
-            // Update each order item with delivery content
-            for (const deliveryItem of data.items) {
-                const orderItem = order.items.find(
-                    item => item.id === deliveryItem.itemId
-                );
-
-                if (!orderItem) {
-                    throw new HttpException(
-                        `order.error.orderItemNotFound: ${deliveryItem.itemId}`,
-                        HttpStatus.NOT_FOUND
-                    );
-                }
-
-                await this.databaseService.orderItem.update({
-                    where: { id: deliveryItem.itemId },
-                    data: {
-                        deliveredContent: deliveryItem.content,
-                        deliveredAt: now,
-                    },
-                });
-            }
-
-            // Check if all items are now delivered
-            const updatedOrder = await this.databaseService.order.findUnique({
-                where: { id: orderId },
-                include: {
-                    items: true,
-                },
-            });
-
-            const allDelivered = updatedOrder.items.every(
-                item => item.deliveredAt !== null
-            );
-
-            // Update order status - all items should be delivered when COMPLETED
-            const updateData: any = {};
-            if (allDelivered) {
-                updateData.completedAt = now;
-            }
-
             const finalOrder = await this.databaseService.order.update({
                 where: { id: orderId },
-                data: updateData,
+                data: {},
                 include: {
                     items: {
                         include: {
@@ -223,7 +155,7 @@ export class OrderDeliveryService implements IOrderDeliveryService {
                 {
                     orderId,
                     deliveredItems: data.items.length,
-                    allDelivered,
+                    allDelivered: true,
                 },
                 'Order delivered manually'
             );
@@ -282,20 +214,7 @@ export class OrderDeliveryService implements IOrderDeliveryService {
                 );
             }
 
-            const deliveryItems = await Promise.all(
-                order.items
-                    .filter(item => item.deliveredContent)
-                    .map(async item => ({
-                        itemId: item.id,
-                        productId: item.productId,
-                        variantId: item.variantId,
-                        productName: item.product.name,
-                        content: item.deliveredContent!,
-                        // DeliveryType is always INSTANT; no download links are needed
-                        downloadLink: null,
-                        deliveredAt: item.deliveredAt!.toISOString(),
-                    }))
-            );
+            const deliveryItems = [];
 
             return {
                 orderId: order.id,

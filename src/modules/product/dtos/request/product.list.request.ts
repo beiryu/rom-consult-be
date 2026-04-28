@@ -62,30 +62,4 @@ export class ProductListQueryDto {
     @IsBoolean()
     isFeatured?: boolean;
 
-    @ApiPropertyOptional({
-        description: 'Hot selling products',
-        type: Boolean,
-    })
-    @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
-    isHot?: boolean;
-
-    @ApiPropertyOptional({
-        description: 'Newly launched products',
-        type: Boolean,
-    })
-    @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
-    isNew?: boolean;
-
-    @ApiPropertyOptional({
-        description: 'Freshly restocked products',
-        type: Boolean,
-    })
-    @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
-    isRestocked?: boolean;
 }

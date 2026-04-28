@@ -68,41 +68,6 @@ export class OrderItemResponseDto implements OrderItem {
     @IsString()
     variantLabel: string | null;
 
-    @ApiPropertyOptional({
-        example: 'AB',
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    regionLabel: string | null;
-
-    @ApiPropertyOptional({
-        example: 'CA',
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    regionCountry: string | null;
-
-    @ApiPropertyOptional({
-        example: 'Your product key: ABC123XYZ',
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    deliveredContent: string | null;
-
-    @ApiPropertyOptional({
-        example: faker.date.recent().toISOString(),
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsDate()
-    deliveredAt: Date | null;
 
     @ApiProperty({
         example: faker.date.past().toISOString(),
@@ -128,41 +93,6 @@ export class OrderItemResponseDto implements OrderItem {
     product?: ProductResponseDto;
 }
 
-export class OrderReviewEmbedDto {
-    @ApiProperty({
-        example: faker.string.uuid(),
-    })
-    @Expose()
-    @IsUUID()
-    id: string;
-
-    @ApiProperty({
-        example: faker.string.uuid(),
-    })
-    @Expose()
-    @IsUUID()
-    orderId: string;
-
-    @ApiProperty({ example: 5 })
-    @Expose()
-    @IsInt()
-    rating: number;
-
-    @ApiPropertyOptional({
-        example: 'Excellent seller, instant delivery.',
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    comment: string | null;
-
-    @ApiProperty({ example: faker.date.recent().toISOString() })
-    @Expose()
-    @IsDate()
-    createdAt: Date;
-}
-
 export class OrderResponseDto {
     @ApiProperty({
         example: faker.string.uuid(),
@@ -184,21 +114,6 @@ export class OrderResponseDto {
     @Expose()
     @IsUUID()
     userId: string;
-
-    @ApiPropertyOptional({
-        example: false,
-    })
-    @Expose()
-    @IsOptional()
-    buyerProtection?: boolean;
-
-    @ApiProperty({
-        example: '5.00000000',
-        description: 'USD fee charged for buyer protection; 0 when disabled.',
-    })
-    @Expose()
-    @Type(() => String)
-    buyerProtectionAmount: Prisma.Decimal;
 
     @ApiProperty({
         enum: OrderStatus,
@@ -272,16 +187,6 @@ export class OrderResponseDto {
     @ValidateNested({ each: true })
     @Type(() => OrderItemResponseDto)
     items?: OrderItemResponseDto[];
-
-    @ApiPropertyOptional({
-        type: OrderReviewEmbedDto,
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @ValidateNested()
-    @Type(() => OrderReviewEmbedDto)
-    review?: OrderReviewEmbedDto | null;
 }
 
 export class OrderUserSnapshotDto {

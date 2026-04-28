@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { faker } from '@faker-js/faker';
-import { DeliveryType } from '@prisma/client';
 import {
     IsString,
     IsUUID,
@@ -9,13 +8,11 @@ import {
     IsInt,
     Min,
     MaxLength,
-    IsEnum,
     IsArray,
     ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import {
-    ProductRegionInputDto,
     ProductVariantInputDto,
 } from './product.create.request';
 
@@ -74,15 +71,6 @@ export class ProductUpdateDto {
     currency?: string;
 
     @ApiPropertyOptional({
-        example: 100,
-        description: 'Stock quantity',
-    })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    stockQuantity?: number;
-
-    @ApiPropertyOptional({
         example: true,
         description: 'Whether the product is active',
     })
@@ -115,69 +103,21 @@ export class ProductUpdateDto {
     @IsUUID()
     categoryId?: string;
 
-    @ApiPropertyOptional({
-        enum: DeliveryType,
-        description: 'Delivery type',
-    })
+    @ApiPropertyOptional({ type: [String] })
     @IsOptional()
-    @IsEnum(DeliveryType)
-    deliveryType?: DeliveryType;
+    features?: unknown;
 
-    @ApiPropertyOptional({
-        example: 'Your product key: ABC123XYZ',
-        description: 'Content for instant delivery',
-    })
+    @ApiPropertyOptional({ type: [String] })
     @IsOptional()
-    @IsString()
-    deliveryContent?: string;
+    included?: unknown;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ type: [Object] })
     @IsOptional()
-    @IsString()
-    shortNotice?: string;
+    sessionMeta?: unknown;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ type: [Object] })
     @IsOptional()
-    @IsBoolean()
-    isHot?: boolean;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsBoolean()
-    isNew?: boolean;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsBoolean()
-    isNFA?: boolean;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsBoolean()
-    isRestocked?: boolean;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    launchedAt?: Date;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    restockedAt?: Date;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    countryOfOrigin?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    redeemProcess?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    warrantyText?: string;
+    howItWorks?: unknown;
 
     @ApiPropertyOptional({
         type: [ProductVariantUpdateInputDto],
@@ -189,22 +129,4 @@ export class ProductUpdateDto {
     @Type(() => ProductVariantUpdateInputDto)
     variants?: ProductVariantUpdateInputDto[];
 
-    @ApiPropertyOptional({
-        type: [ProductRegionInputDto],
-        description: 'Replace regions when provided',
-    })
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ProductRegionInputDto)
-    regions?: ProductRegionInputDto[];
-
-    @ApiPropertyOptional({
-        type: [String],
-        description: 'Related product IDs (replaces existing)',
-    })
-    @IsOptional()
-    @IsArray()
-    @IsUUID('4', { each: true })
-    relatedProductIds?: string[];
 }

@@ -24,12 +24,6 @@ export class AdminProductVariantCreateDto {
     @IsString()
     currency?: string;
 
-    @ApiPropertyOptional({ default: 0 })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    stockQuantity?: number;
-
     @ApiPropertyOptional({ default: true })
     @IsOptional()
     @IsBoolean()
@@ -60,12 +54,6 @@ export class AdminProductVariantUpdateDto {
 
     @ApiPropertyOptional()
     @IsOptional()
-    @IsInt()
-    @Min(0)
-    stockQuantity?: number;
-
-    @ApiPropertyOptional()
-    @IsOptional()
     @IsBoolean()
     isActive?: boolean;
 
@@ -74,37 +62,6 @@ export class AdminProductVariantUpdateDto {
     @IsInt()
     @Min(0)
     sortOrder?: number;
-}
-
-export class AdminProductRegionCreateDto {
-    @ApiProperty({ example: 'AB' })
-    @IsString()
-    label: string;
-
-    @ApiProperty({ example: 'CA' })
-    @IsString()
-    countryCode: string;
-
-    @ApiPropertyOptional({ default: true })
-    @IsOptional()
-    @IsBoolean()
-    isActive?: boolean;
-
-    @ApiPropertyOptional({ default: 0 })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    sortOrder?: number;
-}
-
-export class AdminProductRelatedSetDto {
-    @ApiProperty({
-        type: [String],
-        description: 'Related product IDs (replaces existing relations)',
-    })
-    @IsArray()
-    @IsUUID('4', { each: true })
-    relatedProductIds: string[];
 }
 
 export class AdminProductImageCreateDto {

@@ -24,7 +24,6 @@ model User {
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
   avatar      String?
-  dateOfBirth DateTime? @map("date_of_birth")
 
   // Store related fields
   orders          Order[] @relation("UserOrders")
@@ -32,7 +31,7 @@ model User {
   supportTickets  SupportTicket[] @relation("UserTickets")
   assignedTickets SupportTicket[] @relation("AssignedTickets")
   ticketMessages  TicketMessage[]
-  reviews         OrderReview[]
+  bookings        Booking[]
   isBanned        Boolean         @default(false) @map("is_banned")
   bannedAt        DateTime?       @map("banned_at")
   bannedReason    String?         @map("banned_reason")
@@ -81,33 +80,21 @@ model Product {
   description     String          @db.Text
   price           Decimal         @db.Decimal(20, 8) // Support crypto decimals (fallback when no variants)
   currency        String          @default("USD") // Base currency
-  stockQuantity   Int             @default(0) @map("stock_quantity")
   isActive        Boolean         @default(true) @map("is_active")
   isFeatured      Boolean         @default(false) @map("is_featured")
   sortOrder       Int             @default(0) @map("sort_order")
   categoryId      String          @map("category_id")
   category        ProductCategory @relation(fields: [categoryId], references: [id])
   images          ProductImage[]
-  deliveryType    DeliveryType    @default(INSTANT) @map("delivery_type")
-  deliveryContent String?         @map("delivery_content") @db.Text // For instant delivery
   cartItems       CartItem[]
   orderItems      OrderItem[]
-
-  shortNotice     String?   @map("short_notice")
-  isHot           Boolean   @default(false) @map("is_hot")
-  isNew           Boolean   @default(false) @map("is_new")
-  isNFA           Boolean   @default(false) @map("is_nfa")
-  isRestocked     Boolean   @default(false) @map("is_restocked")
-  launchedAt      DateTime? @map("launched_at")
-  restockedAt     DateTime? @map("restocked_at")
-  countryOfOrigin String?   @map("country_of_origin")
-  redeemProcess   String?   @map("redeem_process") @db.Text
-  warrantyText    String?   @map("warranty_text") @db.Text
+  bookings        Booking[]
+  features        Json?
+  included        Json?
+  sessionMeta     Json? @map("session_meta")
+  howItWorks      Json? @map("how_it_works")
 
   variants    ProductVariant[]
-  regions     ProductRegion[]
-  relatedFrom ProductRelated[] @relation("RelatedFrom")
-  relatedTo   ProductRelated[] @relation("RelatedTo")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -126,7 +113,6 @@ model ProductVariant {
   label         String
   price         Decimal  @db.Decimal(20, 8)
   currency      String   @default("USD")
-  stockQuantity Int      @default(0) @map("stock_quantity")
   isActive      Boolean  @default(true) @map("is_active")
   sortOrder     Int      @default(0) @map("sort_order")
   cartItems     CartItem[]
@@ -137,38 +123,6 @@ model ProductVariant {
 
   @@index([productId])
   @@map("product_variants")
-}
-
-model ProductRegion {
-  id          String   @id @default(uuid())
-  productId   String   @map("product_id")
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  label       String
-  countryCode String   @map("country_code")
-  isActive    Boolean  @default(true) @map("is_active")
-  sortOrder   Int      @default(0) @map("sort_order")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@unique([productId, label])
-  @@index([productId])
-  @@map("product_regions")
-}
-
-model ProductRelated {
-  productId        String  @map("product_id")
-  relatedProductId String  @map("related_product_id")
-  product          Product @relation("RelatedFrom", fields: [productId], references: [id], onDelete: Cascade)
-  relatedProduct   Product @relation("RelatedTo", fields: [relatedProductId], references: [id], onDelete: Cascade)
-
-  @@id([productId, relatedProductId])
-  @@map("product_related")
-}
-
-enum DeliveryType {
-  INSTANT // Digital delivery (sent immediately)
-  MANUAL // Requires admin action
-  DOWNLOAD // File download link
 }
 
 // Product Images
@@ -210,8 +164,6 @@ model CartItem {
 
   variantId     String?         @map("variant_id")
   variant       ProductVariant? @relation(fields: [variantId], references: [id])
-  regionLabel   String          @default("") @map("region_label")
-  regionCountry String          @default("") @map("region_country")
   unitPrice     Decimal?        @db.Decimal(20, 8) @map("unit_price")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -228,13 +180,11 @@ model Order {
   orderNumber    String          @unique @map("order_number") // e.g., ORD-20260129-XXXXX
   userId         String          @map("user_id")
   user           User            @relation("UserOrders", fields: [userId], references: [id])
-  buyerProtection Boolean        @default(false) @map("buyer_protection")
-  buyerProtectionAmount Decimal  @default(0) @map("buyer_protection_amount") @db.Decimal(20, 8)
   status         OrderStatus     @default(PENDING)
   totalAmount    Decimal         @map("total_amount") @db.Decimal(20, 8)
   currency       String
   items          OrderItem[]
-  review         OrderReview?
+  booking        Booking?
   supportTickets SupportTicket[]
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
@@ -255,22 +205,6 @@ enum OrderStatus {
   REFUNDED // Payment refunded
 }
 
-model OrderReview {
-  id        String   @id @default(uuid())
-  orderId   String   @unique @map("order_id")
-  userId    String   @map("user_id")
-  rating    Int
-  comment   String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-  deletedAt DateTime?    @map("deleted_at")
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("order_reviews")
-}
-
 model OrderItem {
   id               String    @id @default(uuid())
   orderId          String    @map("order_id")
@@ -279,14 +213,9 @@ model OrderItem {
   product          Product   @relation(fields: [productId], references: [id])
   quantity         Int
   priceAtPurchase  Decimal   @map("price_at_purchase") @db.Decimal(20, 8)
-  deliveredContent String?   @map("delivered_content") @db.Text // Actual content delivered
-  deliveredAt      DateTime? @map("delivered_at")
-
   variantId     String?         @map("variant_id")
   variant       ProductVariant? @relation(fields: [variantId], references: [id])
   variantLabel  String?         @map("variant_label")
-  regionLabel   String?         @map("region_label")
-  regionCountry String?         @map("region_country")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -294,6 +223,73 @@ model OrderItem {
   @@index([orderId])
   @@index([variantId])
   @@map("order_items")
+}
+
+enum BookingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model Booking {
+  id           String        @id @default(uuid())
+  bookingRef   String        @unique @map("booking_ref")
+  userId       String        @map("user_id")
+  user         User          @relation(fields: [userId], references: [id])
+  productId    String        @map("product_id")
+  product      Product       @relation(fields: [productId], references: [id])
+  variantLabel String?       @map("variant_label")
+  platform     String?
+  scheduledAt  DateTime      @map("scheduled_at")
+  status       BookingStatus @default(SCHEDULED)
+  orderId      String?       @unique @map("order_id")
+  order        Order?        @relation(fields: [orderId], references: [id])
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([productId])
+  @@index([status])
+  @@map("bookings")
+}
+
+enum ConsultantTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ConsultantApplication {
+  id            String            @id @default(uuid())
+  fullName      String            @map("full_name")
+  email         String
+  phone         String?
+  expertise     String
+  experience    String
+  bio           String            @db.Text
+  tier          ConsultantTier
+  daysAvailable String            @map("days_available")
+  timezone      String
+  timeSlots     String            @map("time_slots")
+  linkedin      String?
+  website       String?
+  motivation    String            @db.Text
+  agreedToTerms Boolean           @map("agreed_to_terms")
+  status        ApplicationStatus @default(PENDING)
+  reviewNotes   String?           @map("review_notes") @db.Text
+  reviewedAt    DateTime?         @map("reviewed_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@index([email])
+  @@index([status])
+  @@map("consultant_applications")
 }
 
 // Support Ticket System

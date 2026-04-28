@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { faker } from '@faker-js/faker';
-import { DeliveryType } from '@prisma/client';
 import {
     IsString,
     IsUUID,
@@ -9,7 +8,6 @@ import {
     IsInt,
     Min,
     MaxLength,
-    IsEnum,
     IsArray,
     ValidateNested,
 } from 'class-validator';
@@ -56,33 +54,6 @@ export class ProductVariantInputDto {
     @IsOptional()
     @IsString()
     currency?: string;
-
-    @ApiPropertyOptional({ example: 0, default: 0 })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    stockQuantity?: number;
-
-    @ApiPropertyOptional({ example: true, default: true })
-    @IsOptional()
-    @IsBoolean()
-    isActive?: boolean;
-
-    @ApiPropertyOptional({ example: 0, default: 0 })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    sortOrder?: number;
-}
-
-export class ProductRegionInputDto {
-    @ApiProperty({ example: 'AB' })
-    @IsString()
-    label: string;
-
-    @ApiProperty({ example: 'CA' })
-    @IsString()
-    countryCode: string;
 
     @ApiPropertyOptional({ example: true, default: true })
     @IsOptional()
@@ -140,16 +111,6 @@ export class ProductCreateDto {
     currency?: string;
 
     @ApiPropertyOptional({
-        example: 100,
-        default: 0,
-        description: 'Stock quantity',
-    })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    stockQuantity?: number;
-
-    @ApiPropertyOptional({
         example: true,
         default: true,
         description: 'Whether the product is active',
@@ -184,70 +145,21 @@ export class ProductCreateDto {
     @IsUUID()
     categoryId: string;
 
-    @ApiPropertyOptional({
-        enum: DeliveryType,
-        default: DeliveryType.INSTANT,
-        description: 'Delivery type',
-    })
+    @ApiPropertyOptional({ type: [String] })
     @IsOptional()
-    @IsEnum(DeliveryType)
-    deliveryType?: DeliveryType;
+    features?: unknown;
 
-    @ApiPropertyOptional({
-        example: 'Your product key: ABC123XYZ',
-        description: 'Content for instant delivery',
-    })
+    @ApiPropertyOptional({ type: [String] })
     @IsOptional()
-    @IsString()
-    deliveryContent?: string;
+    included?: unknown;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ type: [Object] })
     @IsOptional()
-    @IsString()
-    shortNotice?: string;
+    sessionMeta?: unknown;
 
-    @ApiPropertyOptional({ default: false })
+    @ApiPropertyOptional({ type: [Object] })
     @IsOptional()
-    @IsBoolean()
-    isHot?: boolean;
-
-    @ApiPropertyOptional({ default: false })
-    @IsOptional()
-    @IsBoolean()
-    isNew?: boolean;
-
-    @ApiPropertyOptional({ default: false })
-    @IsOptional()
-    @IsBoolean()
-    isNFA?: boolean;
-
-    @ApiPropertyOptional({ default: false })
-    @IsOptional()
-    @IsBoolean()
-    isRestocked?: boolean;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    launchedAt?: Date;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    restockedAt?: Date;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    countryOfOrigin?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    redeemProcess?: string;
-
-    @ApiPropertyOptional()
-    @IsOptional()
-    @IsString()
-    warrantyText?: string;
+    howItWorks?: unknown;
 
     @ApiPropertyOptional({
         type: [ProductImageDto],
@@ -269,13 +181,4 @@ export class ProductCreateDto {
     @Type(() => ProductVariantInputDto)
     variants?: ProductVariantInputDto[];
 
-    @ApiPropertyOptional({
-        type: [ProductRegionInputDto],
-        description: 'Available regions / states',
-    })
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ProductRegionInputDto)
-    regions?: ProductRegionInputDto[];
 }

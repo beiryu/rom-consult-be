@@ -54,30 +54,6 @@ export class ProductSearchDto extends BasePrismaQueryDto {
     categorySlug?: string;
 
     @ApiPropertyOptional({
-        description: 'Hot selling products',
-    })
-    @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
-    isHot?: boolean;
-
-    @ApiPropertyOptional({
-        description: 'Newly launched products',
-    })
-    @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
-    isNew?: boolean;
-
-    @ApiPropertyOptional({
-        description: 'Freshly restocked products',
-    })
-    @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
-    isRestocked?: boolean;
-
-    @ApiPropertyOptional({
         example: 0,
         description: 'Minimum price filter',
     })

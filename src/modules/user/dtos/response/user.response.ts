@@ -98,16 +98,6 @@ export class UserResponseDto implements Partial<User> {
     twoFactorEnabled: boolean;
 
     @ApiProperty({
-        example: faker.date.birthdate().toISOString(),
-        required: false,
-        nullable: true,
-    })
-    @Expose()
-    @IsDate()
-    @IsOptional()
-    dateOfBirth: Date | null;
-
-    @ApiProperty({
         example: faker.date.past().toISOString(),
     })
     @Expose()

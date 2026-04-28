@@ -24,7 +24,6 @@ import {
     generateSlug,
 } from '../utils/product.util';
 import {
-    AdminProductRegionCreateDto,
     AdminProductVariantCreateDto,
     AdminProductVariantUpdateDto,
 } from '../dtos/request/product.admin.subresource.request';
@@ -44,23 +43,10 @@ const listInclude = {
         where: { deletedAt: null },
         orderBy: { sortOrder: 'asc' as const },
     },
-    regions: {
-        orderBy: { sortOrder: 'asc' as const },
-    },
 } satisfies Prisma.ProductInclude;
 
 const detailInclude = {
     ...listInclude,
-    regions: {
-        orderBy: { sortOrder: 'asc' as const },
-    },
-    relatedFrom: {
-        include: {
-            relatedProduct: {
-                include: listInclude,
-            },
-        },
-    },
 } satisfies Prisma.ProductInclude;
 
 const adminInclude = {
@@ -71,9 +57,6 @@ const adminInclude = {
     },
     variants: {
         where: { deletedAt: null },
-        orderBy: { sortOrder: 'asc' as const },
-    },
-    regions: {
         orderBy: { sortOrder: 'asc' as const },
     },
 } satisfies Prisma.ProductInclude;
@@ -93,14 +76,12 @@ export class ProductService implements IProductService {
     ): ProductListResponseDto {
         const primaryImageUrl = computePrimaryImageUrl(product.images);
         const fromPrice = computeFromPrice(product.price, product.variants);
-        const tags = buildProductTags(product);
-        const regions = product.regions.filter(r => r.isActive);
+        const tags = buildProductTags();
         const variants = product.variants.filter(
             v => v.isActive && v.deletedAt === null
         );
         return {
             ...product,
-            regions,
             variants,
             primaryImageUrl,
             fromPrice,
@@ -112,29 +93,12 @@ export class ProductService implements IProductService {
         product: Prisma.ProductGetPayload<{ include: typeof detailInclude }>
     ): ProductDetailResponseDto {
         const list = this.mapToListDto(product);
-        const related = product.relatedFrom
-            .filter(
-                row =>
-                    row.relatedProduct &&
-                    row.relatedProduct.deletedAt === null &&
-                    row.relatedProduct.isActive
-            )
-            .map(row =>
-                this.mapToListDto(
-                    row.relatedProduct as Prisma.ProductGetPayload<{
-                        include: typeof listInclude;
-                    }>
-                )
-            )
-            .slice(0, 20);
         return {
             ...list,
             heroImageUrl: list.primaryImageUrl,
-            regions: product.regions.filter(r => r.isActive),
             variants: product.variants.filter(
                 v => v.isActive && v.deletedAt === null
             ),
-            related,
         };
     }
 
@@ -175,9 +139,6 @@ export class ProductService implements IProductService {
             categorySlug?: string;
             isActive?: boolean;
             isFeatured?: boolean;
-            isHot?: boolean;
-            isNew?: boolean;
-            isRestocked?: boolean;
         },
         base: Prisma.ProductWhereInput = { deletedAt: null }
     ): Prisma.ProductWhereInput {
@@ -199,35 +160,10 @@ export class ProductService implements IProductService {
             where.isFeatured = options.isFeatured;
         }
 
-        if (options.isHot !== undefined) {
-            where.isHot = options.isHot;
-        }
-
-        if (options.isNew !== undefined) {
-            where.isNew = options.isNew;
-        }
-
-        if (options.isRestocked !== undefined) {
-            where.isRestocked = options.isRestocked;
-        }
-
         return where;
     }
 
-    private listOrderBy(options: {
-        isHot?: boolean;
-        isNew?: boolean;
-        isRestocked?: boolean;
-    }): Prisma.ProductOrderByWithRelationInput[] {
-        if (options.isRestocked) {
-            return [{ restockedAt: 'desc' }, { sortOrder: 'asc' }];
-        }
-        if (options.isNew) {
-            return [{ launchedAt: 'desc' }, { sortOrder: 'asc' }];
-        }
-        if (options.isHot) {
-            return [{ sortOrder: 'asc' }, { createdAt: 'desc' }];
-        }
+    private listOrderBy(): Prisma.ProductOrderByWithRelationInput[] {
         return [{ isFeatured: 'desc' }, { createdAt: 'desc' }];
     }
 
@@ -259,45 +195,23 @@ export class ProductService implements IProductService {
                     description: data.description,
                     price: data.price,
                     currency: data.currency ?? 'USD',
-                    stockQuantity: data.stockQuantity ?? 0,
                     isActive: data.isActive ?? true,
                     isFeatured: data.isFeatured ?? false,
                     sortOrder: data.sortOrder ?? 0,
                     categoryId: data.categoryId,
-                    deliveryType: data.deliveryType ?? 'INSTANT',
-                    deliveryContent: data.deliveryContent,
-                    shortNotice: data.shortNotice,
-                    isHot: data.isHot ?? false,
-                    isNew: data.isNew ?? false,
-                    isNFA: data.isNFA ?? false,
-                    isRestocked: data.isRestocked ?? false,
-                    launchedAt: data.launchedAt,
-                    restockedAt: data.restockedAt,
-                    countryOfOrigin: data.countryOfOrigin,
-                    redeemProcess: data.redeemProcess,
-                    warrantyText: data.warrantyText,
+                    features: data.features as Prisma.JsonValue | undefined,
+                    included: data.included as Prisma.JsonValue | undefined,
+                    sessionMeta: data.sessionMeta as Prisma.JsonValue | undefined,
+                    howItWorks: data.howItWorks as Prisma.JsonValue | undefined,
                     variants: data.variants?.length
                         ? {
                               create: data.variants.map((v, i) => ({
                                   label: v.label,
                                   price: v.price,
                                   currency: v.currency ?? 'USD',
-                                  stockQuantity: v.stockQuantity ?? 0,
                                   isActive: v.isActive ?? true,
                                   sortOrder: v.sortOrder ?? i,
                               })),
-                          }
-                        : undefined,
-                    regions: data.regions?.length
-                        ? {
-                              createMany: {
-                                  data: data.regions.map((r, i) => ({
-                                      label: r.label,
-                                      countryCode: r.countryCode,
-                                      isActive: r.isActive ?? true,
-                                      sortOrder: r.sortOrder ?? i,
-                                  })),
-                              },
                           }
                         : undefined,
                 },
@@ -350,9 +264,6 @@ export class ProductService implements IProductService {
         categorySlug?: string;
         isActive?: boolean;
         isFeatured?: boolean;
-        isHot?: boolean;
-        isNew?: boolean;
-        isRestocked?: boolean;
     }): Promise<ApiPaginatedDataDto<ProductListResponseDto>> {
         try {
             const where = this.buildListWhere({
@@ -360,16 +271,9 @@ export class ProductService implements IProductService {
                 categorySlug: options?.categorySlug,
                 isActive: options?.isActive,
                 isFeatured: options?.isFeatured,
-                isHot: options?.isHot,
-                isNew: options?.isNew,
-                isRestocked: options?.isRestocked,
             });
 
-            const orderBy = this.listOrderBy({
-                isHot: options?.isHot,
-                isNew: options?.isNew,
-                isRestocked: options?.isRestocked,
-            });
+            const orderBy = this.listOrderBy();
 
             type ListPayload = Prisma.ProductGetPayload<{
                 include: typeof listInclude;
@@ -410,9 +314,6 @@ export class ProductService implements IProductService {
                 categorySlug: query.categorySlug,
                 isActive: query.isActive,
                 isFeatured: query.isFeatured,
-                isHot: query.isHot,
-                isNew: query.isNew,
-                isRestocked: query.isRestocked,
             });
 
             if (query.minPrice !== undefined || query.maxPrice !== undefined) {
@@ -456,9 +357,6 @@ export class ProductService implements IProductService {
                 } as Prisma.ProductOrderByWithRelationInput);
             } else {
                 orderBy = this.listOrderBy({
-                    isHot: query.isHot,
-                    isNew: query.isNew,
-                    isRestocked: query.isRestocked,
                 });
             }
 
@@ -588,7 +486,6 @@ export class ProductService implements IProductService {
                             label: v.label,
                             price: v.price,
                             currency: v.currency ?? 'USD',
-                            stockQuantity: v.stockQuantity ?? 0,
                             isActive: v.isActive ?? true,
                             sortOrder: v.sortOrder ?? 0,
                         },
@@ -606,76 +503,12 @@ export class ProductService implements IProductService {
                         label: v.label,
                         price: v.price,
                         currency: v.currency ?? 'USD',
-                        stockQuantity: v.stockQuantity ?? 0,
                         isActive: v.isActive ?? true,
                         sortOrder: v.sortOrder ?? 0,
                     },
                 });
             }
         }
-    }
-
-    private async syncRegions(
-        productId: string,
-        regions: ProductUpdateDto['regions']
-    ): Promise<void> {
-        if (!regions) {
-            return;
-        }
-
-        await this.databaseService.productRegion.deleteMany({
-            where: { productId },
-        });
-
-        if (regions.length === 0) {
-            return;
-        }
-
-        await this.databaseService.productRegion.createMany({
-            data: regions.map((r, i) => ({
-                productId,
-                label: r.label,
-                countryCode: r.countryCode,
-                isActive: r.isActive ?? true,
-                sortOrder: r.sortOrder ?? i,
-            })),
-        });
-    }
-
-    private async syncRelated(
-        productId: string,
-        relatedProductIds: string[] | undefined
-    ): Promise<void> {
-        if (relatedProductIds === undefined) {
-            return;
-        }
-
-        const unique = [
-            ...new Set(relatedProductIds.filter(id => id && id !== productId)),
-        ];
-
-        await this.databaseService.productRelated.deleteMany({
-            where: { productId },
-        });
-
-        if (unique.length === 0) {
-            return;
-        }
-
-        const existing = await this.databaseService.product.findMany({
-            where: { id: { in: unique }, deletedAt: null },
-            select: { id: true },
-        });
-        const allowed = new Set(existing.map(p => p.id));
-
-        await this.databaseService.productRelated.createMany({
-            data: unique
-                .filter(id => allowed.has(id))
-                .map(relatedProductId => ({
-                    productId,
-                    relatedProductId,
-                })),
-        });
     }
 
     async update(
@@ -709,7 +542,7 @@ export class ProductService implements IProductService {
                 slug = await this.ensureUniqueSlug(generateSlug(data.slug), id);
             }
 
-            const { variants, regions, relatedProductIds, ...rest } =
+            const { variants, ...rest } =
                 data as ProductUpdateDto & Record<string, unknown>;
 
             const updateData: Prisma.ProductUpdateInput = {};
@@ -727,22 +560,13 @@ export class ProductService implements IProductService {
             assignScalar('description', rest.description);
             assignScalar('price', rest.price);
             assignScalar('currency', rest.currency);
-            assignScalar('stockQuantity', rest.stockQuantity);
             assignScalar('isActive', rest.isActive);
             assignScalar('isFeatured', rest.isFeatured);
             assignScalar('sortOrder', rest.sortOrder);
-            assignScalar('deliveryType', rest.deliveryType);
-            assignScalar('deliveryContent', rest.deliveryContent);
-            assignScalar('shortNotice', rest.shortNotice);
-            assignScalar('isHot', rest.isHot);
-            assignScalar('isNew', rest.isNew);
-            assignScalar('isNFA', rest.isNFA);
-            assignScalar('isRestocked', rest.isRestocked);
-            assignScalar('launchedAt', rest.launchedAt);
-            assignScalar('restockedAt', rest.restockedAt);
-            assignScalar('countryOfOrigin', rest.countryOfOrigin);
-            assignScalar('redeemProcess', rest.redeemProcess);
-            assignScalar('warrantyText', rest.warrantyText);
+            assignScalar('features', rest.features as Prisma.JsonValue);
+            assignScalar('included', rest.included as Prisma.JsonValue);
+            assignScalar('sessionMeta', rest.sessionMeta as Prisma.JsonValue);
+            assignScalar('howItWorks', rest.howItWorks as Prisma.JsonValue);
 
             if (slug) {
                 updateData.slug = slug;
@@ -762,8 +586,6 @@ export class ProductService implements IProductService {
             ]);
 
             await this.syncVariants(id, variants);
-            await this.syncRegions(id, regions);
-            await this.syncRelated(id, relatedProductIds);
 
             const product = await this.databaseService.product.findUnique({
                 where: { id },
@@ -824,41 +646,6 @@ export class ProductService implements IProductService {
             this.logger.error(`Failed to delete product: ${error.message}`);
             throw new HttpException(
                 'product.error.deleteProductFailed',
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    async updateStock(
-        id: string,
-        stockQuantity: number
-    ): Promise<ProductResponseDto> {
-        try {
-            if (stockQuantity < 0) {
-                throw new HttpException(
-                    'product.error.invalidStockQuantity',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            const product = await this.databaseService.product.update({
-                where: { id },
-                data: { stockQuantity },
-                include: adminInclude,
-            });
-
-            this.logger.info(
-                { productId: id, stockQuantity },
-                'Product stock updated'
-            );
-            return this.mapToAdminDto(product);
-        } catch (error) {
-            if (error instanceof HttpException) {
-                throw error;
-            }
-            this.logger.error(`Failed to update stock: ${error.message}`);
-            throw new HttpException(
-                'product.error.updateStockFailed',
                 HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
@@ -1097,7 +884,6 @@ export class ProductService implements IProductService {
                 label: dto.label,
                 price: dto.price,
                 currency: dto.currency ?? 'USD',
-                stockQuantity: dto.stockQuantity ?? 0,
                 isActive: dto.isActive ?? true,
                 sortOrder: dto.sortOrder ?? 0,
             },
@@ -1126,9 +912,6 @@ export class ProductService implements IProductService {
                 ...(dto.label !== undefined && { label: dto.label }),
                 ...(dto.price !== undefined && { price: dto.price }),
                 ...(dto.currency !== undefined && { currency: dto.currency }),
-                ...(dto.stockQuantity !== undefined && {
-                    stockQuantity: dto.stockQuantity,
-                }),
                 ...(dto.isActive !== undefined && { isActive: dto.isActive }),
                 ...(dto.sortOrder !== undefined && {
                     sortOrder: dto.sortOrder,
@@ -1159,48 +942,4 @@ export class ProductService implements IProductService {
         return this.findOne(productId);
     }
 
-    async addRegion(
-        productId: string,
-        dto: AdminProductRegionCreateDto
-    ): Promise<ProductResponseDto> {
-        await this.findOne(productId);
-        await this.databaseService.productRegion.create({
-            data: {
-                productId,
-                label: dto.label,
-                countryCode: dto.countryCode,
-                isActive: dto.isActive ?? true,
-                sortOrder: dto.sortOrder ?? 0,
-            },
-        });
-        return this.findOne(productId);
-    }
-
-    async deleteRegion(
-        productId: string,
-        regionId: string
-    ): Promise<ProductResponseDto> {
-        await this.findOne(productId);
-        const r = await this.databaseService.productRegion.findFirst({
-            where: { id: regionId, productId },
-        });
-        if (!r) {
-            throw new HttpException(
-                'product.error.regionNotFound',
-                HttpStatus.NOT_FOUND
-            );
-        }
-        await this.databaseService.productRegion.delete({
-            where: { id: regionId },
-        });
-        return this.findOne(productId);
-    }
-
-    async setRelatedProducts(
-        productId: string,
-        relatedProductIds: string[]
-    ): Promise<ProductResponseDto> {
-        await this.syncRelated(productId, relatedProductIds);
-        return this.findOne(productId);
-    }
 }

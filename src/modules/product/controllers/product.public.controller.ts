@@ -48,9 +48,6 @@ export class ProductPublicController {
             categorySlug: query.categorySlug,
             isActive: query.isActive ?? true,
             isFeatured: query.isFeatured,
-            isHot: query.isHot,
-            isNew: query.isNew,
-            isRestocked: query.isRestocked,
         });
     }
 

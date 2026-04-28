@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, HttpException } from '@nestjs/common';
 import { PinoLogger } from 'nestjs-pino';
-import { OrderStatus, Prisma } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 
 import { DatabaseService } from 'src/common/database/services/database.service';
 import { HelperPaginationService } from 'src/common/helper/services/helper.pagination.service';
@@ -16,7 +16,6 @@ import {
 import { IOrderService } from '../interfaces/order.service.interface';
 import { calculateLineItemsTotals } from 'src/common/utils/commerce.util';
 import {
-    BUYER_PROTECTION_FEE_USD,
     generateOrderNumberString,
 } from '../utils/order.util';
 import { OrderDeliveryService } from './order-delivery.service';
@@ -109,17 +108,6 @@ export class OrderService implements IOrderService {
                     );
                 }
 
-                if (variant.stockQuantity < item.quantity) {
-                    throw new HttpException(
-                        `order.error.insufficientStock: ${product.name}`,
-                        HttpStatus.BAD_REQUEST
-                    );
-                }
-            } else if (product.stockQuantity < item.quantity) {
-                throw new HttpException(
-                    `order.error.insufficientStock: ${product.name}`,
-                    HttpStatus.BAD_REQUEST
-                );
             }
         }
     }
@@ -170,11 +158,7 @@ export class OrderService implements IOrderService {
                 cart.items
             );
             const subtotal = parseFloat(totalAmount);
-            const buyerProtection = Boolean(data.buyerProtection);
-            const buyerProtectionUsd = buyerProtection
-                ? BUYER_PROTECTION_FEE_USD
-                : 0;
-            const finalTotalUsd = Math.max(0, subtotal + buyerProtectionUsd);
+            const finalTotalUsd = Math.max(0, subtotal);
             if (finalTotalUsd <= 0) {
                 throw new HttpException(
                     'order.error.invalidTotal',
@@ -196,10 +180,6 @@ export class OrderService implements IOrderService {
                         totalAmount: totalAmountStr,
                         currency: data.currency || currency,
                         status: OrderStatus.PENDING,
-                        buyerProtection,
-                        buyerProtectionAmount: new Prisma.Decimal(
-                            buyerProtectionUsd.toFixed(8)
-                        ),
                     },
                 });
 
@@ -233,30 +213,8 @@ export class OrderService implements IOrderService {
                             priceAtPurchase,
                             variantId: cartItem.variantId,
                             variantLabel,
-                            regionLabel: cartItem.regionLabel || null,
-                            regionCountry: cartItem.regionCountry || null,
                         },
                     });
-
-                    if (cartItem.variantId) {
-                        await tx.productVariant.update({
-                            where: { id: cartItem.variantId },
-                            data: {
-                                stockQuantity: {
-                                    decrement: cartItem.quantity,
-                                },
-                            },
-                        });
-                    } else {
-                        await tx.product.update({
-                            where: { id: cartItem.productId },
-                            data: {
-                                stockQuantity: {
-                                    decrement: cartItem.quantity,
-                                },
-                            },
-                        });
-                    }
 
                     orderItems.push(orderItem);
                 }
@@ -364,7 +322,6 @@ export class OrderService implements IOrderService {
                                     },
                                 },
                             },
-                            review: true,
                         },
                         orderBy: {
                             [options?.sortBy ?? 'createdAt']:
@@ -423,7 +380,6 @@ export class OrderService implements IOrderService {
                             },
                         },
                     },
-                    review: true,
                 },
             });
 
@@ -636,32 +592,9 @@ export class OrderService implements IOrderService {
                 );
             }
 
-            // Restore stock and cancel order in transaction
+            // Cancel order in transaction
             const cancelledOrder = await this.databaseService.$transaction(
                 async tx => {
-                    // Restore stock for each item
-                    for (const item of order.items) {
-                        if (item.variantId) {
-                            await tx.productVariant.update({
-                                where: { id: item.variantId },
-                                data: {
-                                    stockQuantity: {
-                                        increment: item.quantity,
-                                    },
-                                },
-                            });
-                        } else {
-                            await tx.product.update({
-                                where: { id: item.productId },
-                                data: {
-                                    stockQuantity: {
-                                        increment: item.quantity,
-                                    },
-                                },
-                            });
-                        }
-                    }
-
                     // Update order status
                     return await tx.order.update({
                         where: { id: orderId },

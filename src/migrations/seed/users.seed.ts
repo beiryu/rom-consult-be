@@ -46,7 +46,6 @@ export class UsersSeedService {
                 lastName: 'User',
                 phone: '+10000000000',
                 avatar: 'seed/avatars/demo-user.png',
-                dateOfBirth: new Date('1990-01-15'),
                 role: Role.USER,
                 isVerified: true,
                 isBanned: false,

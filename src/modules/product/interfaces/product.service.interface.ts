@@ -10,7 +10,6 @@ import {
     ProductDetailResponseDto,
 } from '../dtos/response/product.response';
 import {
-    AdminProductRegionCreateDto,
     AdminProductVariantCreateDto,
     AdminProductVariantUpdateDto,
 } from '../dtos/request/product.admin.subresource.request';
@@ -24,9 +23,6 @@ export interface IProductService {
         categorySlug?: string;
         isActive?: boolean;
         isFeatured?: boolean;
-        isHot?: boolean;
-        isNew?: boolean;
-        isRestocked?: boolean;
     }): Promise<ApiPaginatedDataDto<ProductListResponseDto>>;
     search(
         query: ProductSearchDto
@@ -35,7 +31,6 @@ export interface IProductService {
     findBySlug(slug: string): Promise<ProductDetailResponseDto>;
     update(id: string, data: ProductUpdateDto): Promise<ProductResponseDto>;
     delete(id: string): Promise<ApiGenericResponseDto>;
-    updateStock(id: string, stockQuantity: number): Promise<ProductResponseDto>;
     toggleActive(id: string): Promise<ProductResponseDto>;
     toggleFeatured(id: string): Promise<ProductResponseDto>;
     addImage(
@@ -63,17 +58,5 @@ export interface IProductService {
     deleteVariant(
         productId: string,
         variantId: string
-    ): Promise<ProductResponseDto>;
-    addRegion(
-        productId: string,
-        dto: AdminProductRegionCreateDto
-    ): Promise<ProductResponseDto>;
-    deleteRegion(
-        productId: string,
-        regionId: string
-    ): Promise<ProductResponseDto>;
-    setRelatedProducts(
-        productId: string,
-        relatedProductIds: string[]
     ): Promise<ProductResponseDto>;
 }

@@ -7,7 +7,6 @@ import {
     IsString,
     MaxLength,
     MinLength,
-    IsDateString,
 } from 'class-validator';
 
 export class UserUpdateDto {
@@ -51,10 +50,12 @@ export class UserUpdateDto {
     avatar?: string;
 
     @ApiProperty({
-        example: faker.date.birthdate().toISOString(),
+        example: faker.phone.number(),
         required: false,
     })
-    @IsDateString()
+    @IsString()
     @IsOptional()
-    dateOfBirth?: string;
+    @MaxLength(20)
+    @Transform(({ value }) => value?.trim())
+    phone?: string;
 }
