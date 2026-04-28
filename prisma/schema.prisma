@@ -18,27 +18,14 @@ model User {
   firstName   String?   @map("first_name")
   lastName    String?   @map("last_name")
   isVerified  Boolean   @default(false) @map("is_verified")
-  phone       String?
-  role        Role      @default(USER)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
-  avatar      String?
 
   // Store related fields
   orders          Order[] @relation("UserOrders")
   cart            Cart?
-  supportTickets  SupportTicket[] @relation("UserTickets")
-  assignedTickets SupportTicket[] @relation("AssignedTickets")
-  ticketMessages  TicketMessage[]
   bookings        Booking[]
-  isBanned        Boolean         @default(false) @map("is_banned")
-  bannedAt        DateTime?       @map("banned_at")
-  bannedReason    String?         @map("banned_reason")
-
-  // Two-factor authentication
-  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
-  twoFactorSecret  String? @map("two_factor_secret")
 
   passwordResetOtp               String?   @map("password_reset_otp")
   passwordResetOtpExpiry         DateTime? @map("password_reset_otp_expiry")
@@ -48,26 +35,15 @@ model User {
   @@map("users")
 }
 
-enum Role {
-  USER
-  MODERATOR
-  MANAGER
-  ADMIN
-  DEVELOPER
-}
-
 model ProductCategory {
   id          String    @id @default(uuid())
   name        String    @unique
   slug        String    @unique
-  description String?
   icon        String? // S3 key for category icon
   isActive    Boolean   @default(true) @map("is_active")
-  sortOrder   Int       @default(0) @map("sort_order")
   products    Product[]
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
 
   @@map("product_categories")
 }
@@ -81,11 +57,8 @@ model Product {
   price           Decimal         @db.Decimal(20, 8) // Support crypto decimals (fallback when no variants)
   currency        String          @default("USD") // Base currency
   isActive        Boolean         @default(true) @map("is_active")
-  isFeatured      Boolean         @default(false) @map("is_featured")
-  sortOrder       Int             @default(0) @map("sort_order")
   categoryId      String          @map("category_id")
   category        ProductCategory @relation(fields: [categoryId], references: [id])
-  images          ProductImage[]
   cartItems       CartItem[]
   orderItems      OrderItem[]
   bookings        Booking[]
@@ -94,52 +67,13 @@ model Product {
   sessionMeta     Json? @map("session_meta")
   howItWorks      Json? @map("how_it_works")
 
-  variants    ProductVariant[]
-
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
 
   @@index([categoryId])
   @@index([slug])
   @@index([isActive])
   @@map("products")
-}
-
-model ProductVariant {
-  id            String   @id @default(uuid())
-  productId     String   @map("product_id")
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  label         String
-  price         Decimal  @db.Decimal(20, 8)
-  currency      String   @default("USD")
-  isActive      Boolean  @default(true) @map("is_active")
-  sortOrder     Int      @default(0) @map("sort_order")
-  cartItems     CartItem[]
-  orderItems    OrderItem[]
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
-
-  @@index([productId])
-  @@map("product_variants")
-}
-
-// Product Images
-model ProductImage {
-  id        String    @id @default(uuid())
-  productId String    @map("product_id")
-  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  key       String // S3 key
-  url       String? // Optional cached URL
-  isPrimary Boolean   @default(false) @map("is_primary")
-  sortOrder Int       @default(0) @map("sort_order")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  @@index([productId])
-  @@map("product_images")
 }
 
 // Shopping Cart
@@ -162,15 +96,12 @@ model CartItem {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   quantity  Int      @default(1)
 
-  variantId     String?         @map("variant_id")
-  variant       ProductVariant? @relation(fields: [variantId], references: [id])
   unitPrice     Decimal?        @db.Decimal(20, 8) @map("unit_price")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([cartId])
-  @@index([variantId])
   @@map("cart_items")
 }
 
@@ -185,12 +116,10 @@ model Order {
   currency       String
   items          OrderItem[]
   booking        Booking?
-  supportTickets SupportTicket[]
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
   completedAt    DateTime?       @map("completed_at")
   cancelledAt    DateTime?       @map("cancelled_at")
-  deletedAt      DateTime?       @map("deleted_at")
 
   @@index([userId])
   @@index([orderNumber])
@@ -213,15 +142,11 @@ model OrderItem {
   product          Product   @relation(fields: [productId], references: [id])
   quantity         Int
   priceAtPurchase  Decimal   @map("price_at_purchase") @db.Decimal(20, 8)
-  variantId     String?         @map("variant_id")
-  variant       ProductVariant? @relation(fields: [variantId], references: [id])
-  variantLabel  String?         @map("variant_label")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([orderId])
-  @@index([variantId])
   @@map("order_items")
 }
 
@@ -238,7 +163,6 @@ model Booking {
   user         User          @relation(fields: [userId], references: [id])
   productId    String        @map("product_id")
   product      Product       @relation(fields: [productId], references: [id])
-  variantLabel String?       @map("variant_label")
   platform     String?
   scheduledAt  DateTime      @map("scheduled_at")
   status       BookingStatus @default(SCHEDULED)
@@ -292,119 +216,3 @@ model ConsultantApplication {
   @@map("consultant_applications")
 }
 
-// Support Ticket System
-model SupportTicket {
-  id           String          @id @default(uuid())
-  ticketNumber String          @unique @map("ticket_number") // e.g., TKT-20260129-XXXXX
-  orderId      String?         @map("order_id")
-  order        Order?          @relation(fields: [orderId], references: [id])
-  userId       String          @map("user_id")
-  user         User            @relation("UserTickets", fields: [userId], references: [id])
-  subject      String
-  status       TicketStatus    @default(OPEN)
-  priority     TicketPriority  @default(MEDIUM)
-  messages     TicketMessage[]
-  assignedToId String?         @map("assigned_to_id")
-  assignedTo   User?           @relation("AssignedTickets", fields: [assignedToId], references: [id])
-  createdAt    DateTime        @default(now()) @map("created_at")
-  updatedAt    DateTime        @updatedAt @map("updated_at")
-  closedAt     DateTime?       @map("closed_at")
-  deletedAt    DateTime?       @map("deleted_at")
-
-  @@index([userId])
-  @@index([orderId])
-  @@index([status])
-  @@index([assignedToId])
-  @@map("support_tickets")
-}
-
-enum TicketStatus {
-  OPEN
-  IN_PROGRESS
-  WAITING_USER
-  RESOLVED
-  CLOSED
-}
-
-enum TicketPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-model TicketMessage {
-  id        String        @id @default(uuid())
-  ticketId  String        @map("ticket_id")
-  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  userId    String        @map("user_id")
-  user      User          @relation(fields: [userId], references: [id])
-  message   String        @db.Text
-  isStaff   Boolean       @default(false) @map("is_staff")
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
-
-  @@index([ticketId])
-  @@map("ticket_messages")
-}
-
-// CMS Content System
-model CmsContent {
-  id          String      @id @default(uuid())
-  key         String      @unique // faq, terms, privacy, etc.
-  type        ContentType
-  title       String
-  content     String      @db.Text
-  isPublished Boolean     @default(true) @map("is_published")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-  deletedAt   DateTime?   @map("deleted_at")
-
-  @@map("cms_contents")
-}
-
-enum ContentType {
-  FAQ
-  TERMS
-  PRIVACY
-  LANDING_PAGE
-  ABOUT
-}
-
-// System Settings
-model SystemSettings {
-  id        String   @id @default(uuid())
-  key       String   @unique // telegram_channel, telegram_bot_token, etc.
-  value     String   @db.Text
-  category  String // social, payment, general, etc.
-  isPublic  Boolean  @default(false) @map("is_public") // Can be exposed to frontend
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([category])
-  @@map("system_settings")
-}
-
-// Analytics/Statistics
-model Analytics {
-  id        String       @id @default(uuid())
-  type      AnalyticType
-  date      DateTime     @db.Date
-  key       String // product_id, user_id, category_id, etc.
-  value     Float
-  metadata  Json? // Additional data
-  createdAt DateTime     @default(now()) @map("created_at")
-
-  @@unique([type, date, key])
-  @@index([type, date])
-  @@map("analytics")
-}
-
-enum AnalyticType {
-  DAILY_SALES
-  PRODUCT_VIEWS
-  CATEGORY_VIEWS
-  REVENUE
-  USER_SIGNUPS
-  ORDERS_COUNT
-}

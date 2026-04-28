@@ -5,25 +5,8 @@ import {
     IsUUID,
     IsOptional,
     IsBoolean,
-    IsInt,
-    Min,
     MaxLength,
-    IsArray,
-    ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import {
-    ProductVariantInputDto,
-} from './product.create.request';
-
-export class ProductVariantUpdateInputDto extends ProductVariantInputDto {
-    @ApiPropertyOptional({
-        description: 'Existing variant ID (omit to create)',
-    })
-    @IsOptional()
-    @IsUUID()
-    id?: string;
-}
 
 export class ProductUpdateDto {
     @ApiPropertyOptional({
@@ -79,23 +62,6 @@ export class ProductUpdateDto {
     isActive?: boolean;
 
     @ApiPropertyOptional({
-        example: false,
-        description: 'Whether the product is featured',
-    })
-    @IsOptional()
-    @IsBoolean()
-    isFeatured?: boolean;
-
-    @ApiPropertyOptional({
-        example: 0,
-        description: 'Display sort order',
-    })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    sortOrder?: number;
-
-    @ApiPropertyOptional({
         example: faker.string.uuid(),
         description: 'Category ID',
     })
@@ -118,15 +84,5 @@ export class ProductUpdateDto {
     @ApiPropertyOptional({ type: [Object] })
     @IsOptional()
     howItWorks?: unknown;
-
-    @ApiPropertyOptional({
-        type: [ProductVariantUpdateInputDto],
-        description: 'Replace/sync variants when provided',
-    })
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ProductVariantUpdateInputDto)
-    variants?: ProductVariantUpdateInputDto[];
 
 }

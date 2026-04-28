@@ -4,10 +4,7 @@ import { faker } from '@faker-js/faker';
 import { InjectQueue } from '@nestjs/bull';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
 import { Queue } from 'bull';
-import * as speakeasy from 'speakeasy';
-import * as QRCode from 'qrcode';
 
 import { APP_BULL_QUEUES } from 'src/app/enums/app.enum';
 import { DatabaseService } from 'src/common/database/services/database.service';
@@ -22,11 +19,8 @@ import {
 
 import { HelperEncryptionService } from '../../helper/services/helper.encryption.service';
 import { IAuthUser } from '../../request/interfaces/request.interface';
+import { Role } from '../../request/enums/role.enum';
 import { UserService } from 'src/modules/user/services/user.service';
-import { TwoFactorDisableDto } from '../dtos/request/auth.2fa.disable.dto';
-import { TwoFactorSetupDto } from '../dtos/request/auth.2fa.setup.dto';
-import { TwoFactorVerifyLoginDto } from '../dtos/request/auth.2fa.verify-login.dto';
-import { TwoFactorVerifyDto } from '../dtos/request/auth.2fa.verify.dto';
 import { ChangePasswordDto } from '../dtos/request/auth.change-password.dto';
 import { ForgotPasswordDto } from '../dtos/request/auth.forgot-password.dto';
 import { UserLoginDto } from '../dtos/request/auth.login.dto';
@@ -38,12 +32,7 @@ import {
     AuthRefreshResponseDto,
     AuthResponseDto,
     AuthSuccessResponseDto,
-    TwoFactorChallengeResponseDto,
 } from '../dtos/response/auth.response.dto';
-import {
-    TwoFactorSetupResponseDto,
-    TwoFactorVerifyResponseDto,
-} from '../dtos/response/auth.2fa.response';
 import { IAuthService } from '../interfaces/auth.service.interface';
 
 @Injectable()
@@ -61,7 +50,7 @@ export class AuthService implements IAuthService {
 
     public async login(
         data: UserLoginDto
-    ): Promise<AuthResponseDto | TwoFactorChallengeResponseDto> {
+    ): Promise<AuthResponseDto> {
         try {
             const { email, password } = data;
 
@@ -73,14 +62,6 @@ export class AuthService implements IAuthService {
                 throw new HttpException(
                     'user.error.userNotFound',
                     HttpStatus.NOT_FOUND
-                );
-            }
-
-            // Check if user is banned
-            if (user.isBanned) {
-                throw new HttpException(
-                    'auth.error.userBanned',
-                    HttpStatus.FORBIDDEN
                 );
             }
 
@@ -103,26 +84,8 @@ export class AuthService implements IAuthService {
                 );
             }
 
-            if (user.twoFactorEnabled) {
-                if (!user.twoFactorSecret) {
-                    throw new HttpException(
-                        'auth.error.twoFactorNotConfigured',
-                        HttpStatus.INTERNAL_SERVER_ERROR
-                    );
-                }
-
-                const twoFactorToken =
-                    await this.helperEncryptionService.createTwoFactorToken(
-                        user.id
-                    );
-                return {
-                    requiresTwoFactor: true as const,
-                    twoFactorToken,
-                };
-            }
-
             const tokens = await this.helperEncryptionService.createJwtTokens({
-                role: user.role,
+                role: Role.USER,
                 userId: user.id,
             });
 
@@ -133,64 +96,6 @@ export class AuthService implements IAuthService {
         } catch (error) {
             throw error;
         }
-    }
-
-    public async verifyTwoFactorLogin(
-        data: TwoFactorVerifyLoginDto
-    ): Promise<AuthResponseDto> {
-        const { userId } =
-            await this.helperEncryptionService.verifyTwoFactorToken(
-                data.twoFactorToken
-            );
-
-        const user = await this.databaseService.user.findUnique({
-            where: { id: userId },
-        });
-
-        if (!user || user.deletedAt) {
-            throw new HttpException(
-                'user.error.userNotFound',
-                HttpStatus.NOT_FOUND
-            );
-        }
-
-        if (user.isBanned) {
-            throw new HttpException(
-                'auth.error.userBanned',
-                HttpStatus.FORBIDDEN
-            );
-        }
-
-        if (!user.twoFactorEnabled || !user.twoFactorSecret) {
-            throw new HttpException(
-                'auth.error.twoFactorNotEnabled',
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        const verified = speakeasy.totp.verify({
-            secret: user.twoFactorSecret,
-            encoding: 'base32',
-            token: data.code,
-            window: 2,
-        });
-
-        if (!verified) {
-            throw new HttpException(
-                'auth.error.invalidTwoFactorCode',
-                HttpStatus.BAD_REQUEST
-            );
-        }
-
-        const tokens = await this.helperEncryptionService.createJwtTokens({
-            role: user.role,
-            userId: user.id,
-        });
-
-        return {
-            ...tokens,
-            user,
-        };
     }
 
     public async signup(data: UserCreateDto): Promise<AuthResponseDto> {
@@ -217,13 +122,12 @@ export class AuthService implements IAuthService {
                     password: hashed,
                     firstName: firstName?.trim(),
                     lastName: lastName?.trim(),
-                    role: Role.USER,
                     userName: faker.internet.username(),
                 },
             });
 
             const tokens = await this.helperEncryptionService.createJwtTokens({
-                role: createdUser.role,
+                role: Role.USER,
                 userId: createdUser.id,
             });
 
@@ -266,211 +170,6 @@ export class AuthService implements IAuthService {
             userId: payload.userId,
             role: payload.role,
         });
-    }
-
-    public async setupTwoFactor(
-        userId: string,
-        data: TwoFactorSetupDto
-    ): Promise<TwoFactorSetupResponseDto> {
-        try {
-            const user = await this.databaseService.user.findUnique({
-                where: { id: userId },
-            });
-
-            if (!user) {
-                throw new HttpException(
-                    'user.error.userNotFound',
-                    HttpStatus.NOT_FOUND
-                );
-            }
-
-            // Verify password
-            const passwordMatched = await this.helperEncryptionService.match(
-                user.password,
-                data.password
-            );
-
-            if (!passwordMatched) {
-                throw new HttpException(
-                    'auth.error.invalidPassword',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            // Generate secret
-            const secret = speakeasy.generateSecret({
-                name: `Jinx.to (${user.email})`,
-                issuer: 'Jinx.to',
-                length: 32,
-            });
-
-            // Generate QR code
-            const otpAuthUrl = speakeasy.otpauthURL({
-                secret: secret.base32,
-                label: user.email,
-                issuer: 'Jinx.to',
-                encoding: 'base32',
-            });
-
-            const qrCode = await QRCode.toDataURL(otpAuthUrl);
-
-            // Store secret temporarily (user needs to verify before enabling)
-            await this.databaseService.user.update({
-                where: { id: userId },
-                data: {
-                    twoFactorSecret: secret.base32,
-                },
-            });
-
-            return {
-                secret: secret.base32,
-                qrCode,
-                otpAuthUrl,
-            };
-        } catch (error) {
-            if (error instanceof HttpException) {
-                throw error;
-            }
-            throw new HttpException(
-                'auth.error.failedToSetupTwoFactor',
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    public async verifyTwoFactor(
-        userId: string,
-        data: TwoFactorVerifyDto
-    ): Promise<TwoFactorVerifyResponseDto> {
-        try {
-            const user = await this.databaseService.user.findUnique({
-                where: { id: userId },
-            });
-
-            if (!user) {
-                throw new HttpException(
-                    'user.error.userNotFound',
-                    HttpStatus.NOT_FOUND
-                );
-            }
-
-            if (!user.twoFactorSecret) {
-                throw new HttpException(
-                    'auth.error.twoFactorNotSetup',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            // Verify TOTP code
-            const verified = speakeasy.totp.verify({
-                secret: user.twoFactorSecret,
-                encoding: 'base32',
-                token: data.code,
-                window: 2,
-            });
-
-            if (!verified) {
-                throw new HttpException(
-                    'auth.error.invalidTwoFactorCode',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            // Enable 2FA
-            await this.databaseService.user.update({
-                where: { id: userId },
-                data: {
-                    twoFactorEnabled: true,
-                },
-            });
-
-            return {
-                success: true,
-                message: 'auth.success.twoFactorEnabled',
-            };
-        } catch (error) {
-            if (error instanceof HttpException) {
-                throw error;
-            }
-            throw new HttpException(
-                'auth.error.failedToVerifyTwoFactor',
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-    }
-
-    public async disableTwoFactor(
-        userId: string,
-        data: TwoFactorDisableDto
-    ): Promise<{ success: boolean; message: string }> {
-        try {
-            const user = await this.databaseService.user.findUnique({
-                where: { id: userId },
-            });
-
-            if (!user) {
-                throw new HttpException(
-                    'user.error.userNotFound',
-                    HttpStatus.NOT_FOUND
-                );
-            }
-
-            if (!user.twoFactorEnabled || !user.twoFactorSecret) {
-                throw new HttpException(
-                    'auth.error.twoFactorNotEnabled',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            const passwordMatched = await this.helperEncryptionService.match(
-                user.password,
-                data.password
-            );
-
-            if (!passwordMatched) {
-                throw new HttpException(
-                    'auth.error.invalidPassword',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            // Verify TOTP code before disabling
-            const verified = speakeasy.totp.verify({
-                secret: user.twoFactorSecret,
-                encoding: 'base32',
-                token: data.code,
-                window: 2,
-            });
-
-            if (!verified) {
-                throw new HttpException(
-                    'auth.error.invalidTwoFactorCode',
-                    HttpStatus.BAD_REQUEST
-                );
-            }
-
-            // Disable 2FA and clear secret
-            await this.databaseService.user.update({
-                where: { id: userId },
-                data: {
-                    twoFactorEnabled: false,
-                    twoFactorSecret: null,
-                },
-            });
-
-            return {
-                success: true,
-                message: 'auth.success.twoFactorDisabled',
-            };
-        } catch (error) {
-            if (error instanceof HttpException) {
-                throw error;
-            }
-            throw new HttpException(
-                'auth.error.failedToDisableTwoFactor',
-                HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
     }
 
     public async forgotPassword(

@@ -1,11 +1,10 @@
 import { faker } from '@faker-js/faker';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
-import { $Enums, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { Exclude, Expose } from 'class-transformer';
 import {
     IsDate,
     IsEmail,
-    IsEnum,
     IsOptional,
     IsString,
     IsUUID,
@@ -48,16 +47,6 @@ export class UserResponseDto implements Partial<User> {
     lastName: string | null;
 
     @ApiProperty({
-        example: faker.image.avatar(),
-        required: false,
-        nullable: true,
-    })
-    @Expose()
-    @IsString()
-    @IsOptional()
-    avatar: string | null;
-
-    @ApiProperty({
         example: faker.internet.username(),
     })
     @Expose()
@@ -65,37 +54,11 @@ export class UserResponseDto implements Partial<User> {
     userName: string;
 
     @ApiProperty({
-        example: faker.phone.number(),
-        required: false,
-        nullable: true,
-    })
-    @Expose()
-    @IsString()
-    @IsOptional()
-    phone: string | null;
-
-    @ApiProperty({
-        enum: $Enums.Role,
-        example: faker.helpers.arrayElement(Object.values($Enums.Role)),
-    })
-    @Expose()
-    @IsEnum($Enums.Role)
-    role: $Enums.Role;
-
-    @ApiProperty({
         example: faker.datatype.boolean(),
     })
     @Expose()
     @IsBoolean()
     isVerified: boolean;
-
-    @ApiProperty({
-        example: false,
-        description: 'Whether TOTP two-factor authentication is enabled',
-    })
-    @Expose()
-    @IsBoolean()
-    twoFactorEnabled: boolean;
 
     @ApiProperty({
         example: faker.date.past().toISOString(),

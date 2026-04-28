@@ -9,10 +9,6 @@ import {
     ProductListResponseDto,
     ProductDetailResponseDto,
 } from '../dtos/response/product.response';
-import {
-    AdminProductVariantCreateDto,
-    AdminProductVariantUpdateDto,
-} from '../dtos/request/product.admin.subresource.request';
 
 export interface IProductService {
     create(data: ProductCreateDto): Promise<ProductResponseDto>;
@@ -22,7 +18,6 @@ export interface IProductService {
         categoryId?: string;
         categorySlug?: string;
         isActive?: boolean;
-        isFeatured?: boolean;
     }): Promise<ApiPaginatedDataDto<ProductListResponseDto>>;
     search(
         query: ProductSearchDto
@@ -32,31 +27,4 @@ export interface IProductService {
     update(id: string, data: ProductUpdateDto): Promise<ProductResponseDto>;
     delete(id: string): Promise<ApiGenericResponseDto>;
     toggleActive(id: string): Promise<ProductResponseDto>;
-    toggleFeatured(id: string): Promise<ProductResponseDto>;
-    addImage(
-        productId: string,
-        imageKey: string,
-        isPrimary?: boolean
-    ): Promise<ProductResponseDto>;
-    removeImage(
-        productId: string,
-        imageId: string
-    ): Promise<ProductResponseDto>;
-    setPrimaryImage(
-        productId: string,
-        imageId: string
-    ): Promise<ProductResponseDto>;
-    addVariant(
-        productId: string,
-        dto: AdminProductVariantCreateDto
-    ): Promise<ProductResponseDto>;
-    updateVariant(
-        productId: string,
-        variantId: string,
-        dto: AdminProductVariantUpdateDto
-    ): Promise<ProductResponseDto>;
-    deleteVariant(
-        productId: string,
-        variantId: string
-    ): Promise<ProductResponseDto>;
 }

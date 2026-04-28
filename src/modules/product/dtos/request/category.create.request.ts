@@ -4,8 +4,6 @@ import {
     IsString,
     IsOptional,
     IsBoolean,
-    IsInt,
-    Min,
     MaxLength,
 } from 'class-validator';
 
@@ -28,14 +26,6 @@ export class CategoryCreateDto {
     slug?: string;
 
     @ApiPropertyOptional({
-        example: faker.lorem.paragraph(),
-        description: 'Category description',
-    })
-    @IsOptional()
-    @IsString()
-    description?: string;
-
-    @ApiPropertyOptional({
         example: 'categories/icons/electronics.png',
         description: 'S3 key for category icon',
     })
@@ -52,13 +42,4 @@ export class CategoryCreateDto {
     @IsBoolean()
     isActive?: boolean;
 
-    @ApiPropertyOptional({
-        example: 0,
-        default: 0,
-        description: 'Sort order for display',
-    })
-    @IsOptional()
-    @IsInt()
-    @Min(0)
-    sortOrder?: number;
 }

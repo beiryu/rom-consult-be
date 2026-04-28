@@ -2,9 +2,7 @@ import {
     HttpStatus,
     Injectable,
     HttpException,
-    ForbiddenException,
 } from '@nestjs/common';
-import { Role } from '@prisma/client';
 
 import { DatabaseService } from 'src/common/database/services/database.service';
 import { HelperEncryptionService } from 'src/common/helper/services/helper.encryption.service';
@@ -53,7 +51,6 @@ export class UserService implements IUserService {
     async deleteUser(
         userId: string,
         currentUserId: string,
-        currentUserRole: Role,
         password?: string
     ): Promise<ApiGenericResponseDto> {
         try {
@@ -67,35 +64,30 @@ export class UserService implements IUserService {
                 );
             }
 
-            if (currentUserRole !== Role.ADMIN && currentUserId !== userId) {
-                throw new ForbiddenException(
-                    'auth.error.insufficientPermissions'
+            if (currentUserId !== userId) {
+                throw new HttpException(
+                    'auth.error.insufficientPermissions',
+                    HttpStatus.FORBIDDEN
                 );
             }
 
-            const isAdminDeletingAnotherUser =
-                currentUserRole === Role.ADMIN && currentUserId !== userId;
+            if (!password) {
+                throw new HttpException(
+                    'auth.error.invalidPassword',
+                    HttpStatus.BAD_REQUEST
+                );
+            }
 
-            if (!isAdminDeletingAnotherUser) {
-                if (!password) {
-                    throw new HttpException(
-                        'auth.error.invalidPassword',
-                        HttpStatus.BAD_REQUEST
-                    );
-                }
+            const passwordMatched = await this.helperEncryptionService.match(
+                user.password,
+                password
+            );
 
-                const passwordMatched =
-                    await this.helperEncryptionService.match(
-                        user.password,
-                        password
-                    );
-
-                if (!passwordMatched) {
-                    throw new HttpException(
-                        'auth.error.invalidPassword',
-                        HttpStatus.BAD_REQUEST
-                    );
-                }
+            if (!passwordMatched) {
+                throw new HttpException(
+                    'auth.error.invalidPassword',
+                    HttpStatus.BAD_REQUEST
+                );
             }
 
             await this.databaseService.user.update({
@@ -108,10 +100,7 @@ export class UserService implements IUserService {
                 message: 'user.success.userDeleted',
             };
         } catch (error) {
-            if (
-                error instanceof HttpException ||
-                error instanceof ForbiddenException
-            ) {
+            if (error instanceof HttpException) {
                 throw error;
             }
             throw new HttpException(
@@ -240,10 +229,6 @@ export class UserService implements IUserService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { isPrimary: true },
-                                        take: 1,
-                                    },
                                 },
                             },
                         },

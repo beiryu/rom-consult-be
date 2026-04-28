@@ -7,32 +7,8 @@ import {
     IsNumber,
     IsString,
     IsOptional,
-    IsBoolean,
 } from 'class-validator';
 import { Expose, Type } from 'class-transformer';
-
-export class PurchaseHistoryProductImageDto {
-    @ApiProperty()
-    @Expose()
-    @IsString()
-    id: string;
-
-    @ApiProperty()
-    @Expose()
-    @IsString()
-    key: string;
-
-    @ApiProperty()
-    @Expose()
-    @IsString()
-    @IsOptional()
-    url?: string | null;
-
-    @ApiProperty()
-    @Expose()
-    @IsBoolean()
-    isPrimary: boolean;
-}
 
 export class PurchaseHistoryCategoryDto {
     @ApiProperty()
@@ -72,11 +48,6 @@ export class PurchaseHistoryProductDto {
     @Type(() => PurchaseHistoryCategoryDto)
     category: PurchaseHistoryCategoryDto;
 
-    @ApiProperty({ type: [PurchaseHistoryProductImageDto] })
-    @Expose()
-    @Type(() => PurchaseHistoryProductImageDto)
-    @IsArray()
-    images: PurchaseHistoryProductImageDto[];
 }
 
 export class PurchaseHistoryOrderItemDto {

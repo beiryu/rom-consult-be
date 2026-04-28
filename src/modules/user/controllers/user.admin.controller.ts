@@ -7,7 +7,7 @@ import {
     Post,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Role } from 'src/common/request/enums/role.enum';
 
 import { DocGenericResponse } from 'src/common/doc/decorators/doc.generic.decorator';
 import { AllowedRoles } from 'src/common/request/decorators/request.role.decorator';
@@ -38,7 +38,7 @@ export class UserAdminController {
         @Param('id') userId: string,
         @AuthUser() user: IAuthUser
     ): Promise<ApiGenericResponseDto> {
-        return this.userService.deleteUser(userId, user.userId, user.role);
+        return this.userService.deleteUser(userId, user.userId);
     }
 
     @Post(':id/ban')

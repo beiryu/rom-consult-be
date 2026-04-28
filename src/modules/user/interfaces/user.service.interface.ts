@@ -1,5 +1,3 @@
-import { Role } from '@prisma/client';
-
 import { ApiGenericResponseDto } from 'src/common/response/dtos/response.generic.dto';
 
 import { UserUpdateDto } from '../dtos/request/user.update.request';
@@ -19,7 +17,6 @@ export interface IUserService {
     deleteUser(
         userId: string,
         currentUserId: string,
-        currentUserRole: Role,
         password?: string
     ): Promise<ApiGenericResponseDto>;
     getProfile(userId: string): Promise<UserGetProfileResponseDto>;

@@ -52,14 +52,4 @@ export class ProductListQueryDto {
     @IsBoolean()
     isActive?: boolean;
 
-    @ApiPropertyOptional({
-        description: 'Filter by featured status',
-        example: false,
-        type: Boolean,
-    })
-    @IsOptional()
-    @Type(() => Boolean)
-    @IsBoolean()
-    isFeatured?: boolean;
-
 }

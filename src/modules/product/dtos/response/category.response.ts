@@ -5,7 +5,6 @@ import { Expose } from 'class-transformer';
 import {
     IsString,
     IsBoolean,
-    IsInt,
     IsDate,
     IsOptional,
     IsUUID,
@@ -34,15 +33,6 @@ export class CategoryResponseDto implements ProductCategory {
     slug: string;
 
     @ApiPropertyOptional({
-        example: faker.lorem.paragraph(),
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsString()
-    description: string | null;
-
-    @ApiPropertyOptional({
         example: 'categories/icons/electronics.png',
         nullable: true,
     })
@@ -59,13 +49,6 @@ export class CategoryResponseDto implements ProductCategory {
     isActive: boolean;
 
     @ApiProperty({
-        example: 0,
-    })
-    @Expose()
-    @IsInt()
-    sortOrder: number;
-
-    @ApiProperty({
         example: faker.date.past().toISOString(),
     })
     @Expose()
@@ -79,12 +62,4 @@ export class CategoryResponseDto implements ProductCategory {
     @IsDate()
     updatedAt: Date;
 
-    @ApiPropertyOptional({
-        example: null,
-        nullable: true,
-    })
-    @Expose()
-    @IsOptional()
-    @IsDate()
-    deletedAt: Date | null;
 }
