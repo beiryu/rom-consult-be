@@ -1,4 +1,4 @@
-# Jinx.to 🚀
+# romconsult 🚀
 
 ## 🛠️ Tech Stack
 
@@ -68,7 +68,7 @@ Create a `.env` file based on `.env.docker` template. All environment variables 
 | Variable            | Description                              | Default       | Required |
 | ------------------- | ---------------------------------------- | ------------- | -------- |
 | `APP_ENV`           | Environment mode                         | `local`       | Yes      |
-| `APP_NAME`          | Application name                         | `jinx.to` | No    |
+| `APP_NAME`          | Application name                         | `romconsult` | No    |
 | `APP_DEBUG`         | Enable debug mode                        | `true`        | No       |
 | `APP_LOG_LEVEL`     | Logging level                            | `debug`       | No       |
 | `APP_CORS_ORIGINS`  | Comma-separated allowed CORS origins     | `*`           | No       |
@@ -163,10 +163,10 @@ docker-compose down
 
 ```bash
 # Build production image (uses ci/Dockerfile for production)
-docker build -f ci/Dockerfile -t jinx.to:latest .
+docker build -f ci/Dockerfile -t romconsult:latest .
 
 # Run production container
-docker run -p 3001:3001 --env-file .env jinx.to:latest
+docker run -p 3001:3001 --env-file .env romconsult:latest
 ```
 
 ## 📚 API Documentation
@@ -294,13 +294,13 @@ yarn studio
 
 ```bash
 # Build and tag production image
-docker build -f ci/Dockerfile -t your-registry/jinx.to:v1.0.0 .
+docker build -f ci/Dockerfile -t your-registry/romconsult:v1.0.0 .
 
 # Push to registry
-docker push your-registry/jinx.to:v1.0.0
+docker push your-registry/romconsult:v1.0.0
 
 # Run with Docker
-docker run -d -p 3001:3001 --env-file .env --name nestjs-app your-registry/jinx.to:v1.0.0
+docker run -d -p 3001:3001 --env-file .env --name nestjs-app your-registry/romconsult:v1.0.0
 
 # Or deploy with Docker Compose (full stack)
 docker-compose up -d --build
@@ -350,15 +350,15 @@ Notes:
 #### AWS ECS
 ```bash
 # 1. Create ECR repository
-aws ecr create-repository --repository-name jinx.to --region us-east-1
+aws ecr create-repository --repository-name romconsult --region us-east-1
 
 # 2. Authenticate Docker to ECR
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
 
 # 3. Build and push
-docker build -f ci/Dockerfile -t jinx.to:latest .
-docker tag jinx.to:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/jinx.to:latest
-docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/jinx.to:latest
+docker build -f ci/Dockerfile -t romconsult:latest .
+docker tag romconsult:latest <account-id>.dkr.ecr.us-east-1.amazonaws.com/romconsult:latest
+docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/romconsult:latest
 
 # 4. Create ECS task definition and service through AWS Console or CLI
 ```
@@ -366,11 +366,11 @@ docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/jinx.to:latest
 #### Google Cloud Run
 ```bash
 # 1. Build and submit to Google Container Registry
-gcloud builds submit --tag gcr.io/PROJECT-ID/jinx.to
+gcloud builds submit --tag gcr.io/PROJECT-ID/romconsult
 
 # 2. Deploy to Cloud Run
-gcloud run deploy jinx.to \
-  --image gcr.io/PROJECT-ID/jinx.to \
+gcloud run deploy romconsult \
+  --image gcr.io/PROJECT-ID/romconsult \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
@@ -381,8 +381,8 @@ gcloud run deploy jinx.to \
 #### DigitalOcean App Platform
 ```bash
 # 1. Push to Docker Hub or DigitalOcean Container Registry
-docker build -f ci/Dockerfile -t your-dockerhub/jinx.to:latest .
-docker push your-dockerhub/jinx.to:latest
+docker build -f ci/Dockerfile -t your-dockerhub/romconsult:latest .
+docker push your-dockerhub/romconsult:latest
 
 # 2. Create app via DigitalOcean Console
 #    - Select Docker Hub as source
@@ -643,7 +643,7 @@ If you encounter issues not covered here:
    APP_LOG_LEVEL=debug
    ```
 
-3. **Search Issues**: Check [GitHub Issues](https://github.com/hmake98/jinx.to/issues)
+3. **Search Issues**: Check [GitHub Issues](https://github.com/hmake98/romconsult/issues)
 
 4. **Create an Issue**: Provide:
    - Error message

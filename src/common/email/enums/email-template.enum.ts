@@ -6,7 +6,7 @@ export enum EMAIL_TEMPLATES {
 }
 
 export enum EMAIL_TEMPLATE_SUBJECTS {
-    WELCOME_EMAIL = 'Welcome to Jinx.to Project',
+    WELCOME_EMAIL = 'Welcome to romconsult Project',
     FORGOT_PASSWORD_OTP = 'Reset your password — verification code',
     VERIFY_EMAIL = 'Verify your email address',
     RESET_PASSWORD_LINK = 'Reset your password',

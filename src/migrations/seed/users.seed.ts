@@ -4,7 +4,7 @@ import { Command } from 'nestjs-command';
 import { PinoLogger } from 'nestjs-pino';
 import { DatabaseService } from 'src/common/database/services/database.service';
 
-const SEED_EMAIL = 'user@jinx.to';
+const SEED_EMAIL = 'user@romconsult';
 /** Meets public login password rules (upper, lower, digit, special, 8+). */
 const SEED_PASSWORD = 'Test1234!';
 

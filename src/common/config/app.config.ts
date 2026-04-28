@@ -26,7 +26,7 @@ export default registerAs('app', (): Record<string, any> => {
 
     return {
         env: process.env.APP_ENV ?? APP_ENVIRONMENT.LOCAL,
-        name: process.env.APP_NAME ?? 'jinx.to',
+        name: process.env.APP_NAME ?? 'romconsult',
 
         versioning: {
             enable: process.env.HTTP_VERSIONING_ENABLE === 'true',
