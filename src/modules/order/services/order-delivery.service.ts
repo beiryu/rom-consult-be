@@ -71,13 +71,6 @@ export class OrderDeliveryService implements IOrderDeliveryService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { deletedAt: null },
-                                        orderBy: [
-                                            { isPrimary: 'desc' },
-                                            { sortOrder: 'asc' },
-                                        ],
-                                    },
                                 },
                             },
                         },
@@ -137,13 +130,6 @@ export class OrderDeliveryService implements IOrderDeliveryService {
                             product: {
                                 include: {
                                     category: true,
-                                    images: {
-                                        where: { deletedAt: null },
-                                        orderBy: [
-                                            { isPrimary: 'desc' },
-                                            { sortOrder: 'asc' },
-                                        ],
-                                    },
                                 },
                             },
                         },
@@ -188,7 +174,6 @@ export class OrderDeliveryService implements IOrderDeliveryService {
                 where: {
                     id: orderId,
                     userId,
-                    deletedAt: null,
                 },
                 include: {
                     items: {

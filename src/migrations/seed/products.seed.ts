@@ -1,766 +1,400 @@
 import { Injectable } from '@nestjs/common';
-import { DeliveryType, Prisma, Product, ProductCategory } from '@prisma/client';
+import { Prisma, Product, ProductCategory } from '@prisma/client';
 import { PinoLogger } from 'nestjs-pino';
 import { Command } from 'nestjs-command';
 import { DatabaseService } from 'src/common/database/services/database.service';
 
 type CategorySlug =
-    | 'cashout'
-    | 'hotels'
-    | 'food'
-    | 'flights'
-    | 'groceries'
-    | 'shopping'
-    | 'clothing'
-    | 'gas-oil'
-    | 'tickets'
-    | 'lifestyle'
-    | 'jewelry'
-    | 'rentals'
-    | 'streaming';
+    | 'ecommerce'
+    | 'crm'
+    | 'seo'
+    | 'analytics'
+    | 'paid-media'
+    | 'cloud-aws'
+    | 'email-marketing'
+    | 'ai-automation';
 
 type ProductSlug =
-    | 'visa-gift-card'
-    | 'mastercard-gift-card'
-    | 'paypal'
-    | 'venmo'
-    | 'marriott-bonvoy'
-    | 'hilton-honors'
-    | 'starbucks'
-    | 'doordash'
-    | 'southwest-airlines'
-    | 'delta-air-lines'
-    | 'whole-foods-market'
-    | 'instacart'
-    | 'amazon'
-    | 'target'
-    | 'nike'
-    | 'gap'
-    | 'shell-fuel-card'
-    | 'exxonmobil-gift-card'
-    | 'ticketmaster'
-    | 'stubhub'
-    | 'spotify-premium'
-    | 'google-play'
-    | 'pandora'
-    | 'tiffany-co'
-    | 'hertz'
-    | 'enterprise'
-    | 'netflix'
-    | 'disney-plus';
+    | 'store-architecture-review'
+    | 'conversion-funnel-optimization'
+    | 'payment-cart-diagnostics'
+    | 'crm-pipeline-cleanup'
+    | 'sales-workflow-automation'
+    | 'customer-retention-playbook'
+    | 'technical-seo-deep-audit'
+    | 'content-gap-strategy'
+    | 'local-seo-optimization'
+    | 'ga4-tracking-reliability-audit'
+    | 'executive-kpi-dashboard-setup'
+    | 'attribution-insight-session'
+    | 'google-ads-account-audit'
+    | 'meta-ads-creative-testing-plan'
+    | 'cross-channel-budget-reallocation'
+    | 'aws-cost-optimization-sprint'
+    | 'cloud-architecture-health-check'
+    | 'serverless-migration-planning'
+    | 'lifecycle-email-strategy-session'
+    | 'klaviyo-automation-optimization'
+    | 'deliverability-domain-setup'
+    | 'ai-workflow-discovery-workshop'
+    | 'prompt-agent-design-review'
+    | 'internal-ai-assistant-rollout-plan';
 
 type ProductSeedDef = {
     slug: ProductSlug;
     name: string;
     categorySlug: CategorySlug;
     description: string;
-    isHot: boolean;
-    isNew: boolean;
-    isRestocked: boolean;
-    isFeatured: boolean;
-    sortOrder: number;
-    shortNotice: string;
-    deliveryContent: string;
-    redeemProcess: string;
-    warrantyText: string;
-    countryOfOrigin: string;
-    launchedAt: Date | null;
-    restockedAt: Date | null;
+    features: string[];
 };
 
 const CATEGORY_SEEDS: Array<{
     slug: CategorySlug;
     name: string;
     icon: string;
-    description: string;
-    sortOrder: number;
 }> = [
-    {
-        slug: 'cashout',
-        name: 'Cashout',
-        icon: 'IconDollar',
-        description:
-            'Cards and balances you can move toward cash, wallets, or payouts.',
-        sortOrder: 1,
-    },
-    {
-        slug: 'hotels',
-        name: 'Hotels',
-        icon: 'IconFoodBell',
-        description: 'Stays, resort credit, and hotel-branded gift cards.',
-        sortOrder: 2,
-    },
-    {
-        slug: 'food',
-        name: 'Food',
-        icon: 'IconCookies',
-        description: 'Restaurants, delivery, and coffeehouse gift cards.',
-        sortOrder: 3,
-    },
-    {
-        slug: 'flights',
-        name: 'Flights',
-        icon: 'IconAirplane',
-        description: 'Airline vouchers and flight gift cards.',
-        sortOrder: 4,
-    },
-    {
-        slug: 'groceries',
-        name: 'Groceries',
-        icon: 'IconApples',
-        description: 'Supermarkets, meal kits, and grocery delivery credit.',
-        sortOrder: 5,
-    },
-    {
-        slug: 'shopping',
-        name: 'Shopping',
-        icon: 'IconShoppingBag2',
-        description: 'Retail and marketplace gift cards for everyday buys.',
-        sortOrder: 6,
-    },
-    {
-        slug: 'clothing',
-        name: 'Clothing',
-        icon: 'IconFashion',
-        description: 'Apparel, footwear, and accessories.',
-        sortOrder: 7,
-    },
-    {
-        slug: 'gas-oil',
-        name: 'Gas/Oil',
-        icon: 'IconGas',
-        description: 'Fuel brands and convenience store gift cards.',
-        sortOrder: 8,
-    },
-    {
-        slug: 'tickets',
-        name: 'Tickets',
-        icon: 'IconTicket',
-        description: 'Concerts, sports, and live event ticketing.',
-        sortOrder: 9,
-    },
-    {
-        slug: 'lifestyle',
-        name: 'Lifestyle',
-        icon: 'IconPeopleIdCard',
-        description: 'Fitness, apps, and everyday digital lifestyle perks.',
-        sortOrder: 10,
-    },
-    {
-        slug: 'jewelry',
-        name: 'Jewelry',
-        icon: 'IconDiamondShine',
-        description: 'Fine jewelry and accessories gift cards.',
-        sortOrder: 11,
-    },
-    {
-        slug: 'rentals',
-        name: 'Rentals',
-        icon: 'IconCarFrontView',
-        description: 'Car rental and mobility gift cards.',
-        sortOrder: 12,
-    },
-    {
-        slug: 'streaming',
-        name: 'Streaming',
-        icon: 'IconClapboardWide',
-        description: 'Video and entertainment streaming subscriptions.',
-        sortOrder: 13,
-    },
+    { slug: 'ecommerce', name: 'E-commerce', icon: 'IconShoppingBag' },
+    { slug: 'crm', name: 'CRM', icon: 'IconUsersGroup' },
+    { slug: 'seo', name: 'SEO', icon: 'IconSearch' },
+    { slug: 'analytics', name: 'Analytics', icon: 'IconChartBar' },
+    { slug: 'paid-media', name: 'Paid Media', icon: 'IconSpeaker' },
+    { slug: 'cloud-aws', name: 'AWS Cloud', icon: 'IconCloud' },
+    { slug: 'email-marketing', name: 'Email Marketing', icon: 'IconMail' },
+    { slug: 'ai-automation', name: 'AI Automation', icon: 'IconBrain' },
 ];
 
-const REDEEM_HTML =
-    '<p>Complete checkout, then open your order confirmation email. Copy the code and redeem it in the brand’s official app or website within the validity window shown on the card.</p>';
+const DEFAULT_INCLUDED = [
+    'Live 1-on-1 video consultation with screen sharing',
+    'Personalized strategies tailored to your business',
+    'Expert guidance from certified professionals',
+    'Q&A session to address your specific questions',
+    'Post-session documentation and action items',
+    'Recording available upon request',
+];
 
-const WARRANTY_HTML =
-    '<p>Codes are guaranteed at the time of delivery. If a code fails to redeem, contact support within 7 days with your order ID for a replacement or refund per store policy.</p>';
+const DEFAULT_SESSION_META = [
+    { id: 'live-video', label: 'Live Video Session' },
+    { id: 'one-hour', label: '1 Hour' },
+    { id: 'expert', label: 'Expert Consultant' },
+];
+
+const DEFAULT_HOW_IT_WORKS = [
+    {
+        id: 'book',
+        title: 'Book Your Session',
+        description:
+            'Select your tier and complete payment to reserve your 1-hour slot.',
+    },
+    {
+        id: 'confirm',
+        title: 'Get Confirmation',
+        description:
+            'Receive your session confirmation and meeting details by email.',
+    },
+    {
+        id: 'join',
+        title: 'Join The Call',
+        description:
+            'Connect with your consultant at the scheduled time for the live session.',
+    },
+    {
+        id: 'results',
+        title: 'Get Results',
+        description:
+            'Leave with actionable recommendations tailored to your business goals.',
+    },
+];
 
 const PRODUCT_DEFS: ProductSeedDef[] = [
     {
-        slug: 'visa-gift-card',
-        name: 'Visa Gift Card',
-        categorySlug: 'cashout',
+        slug: 'store-architecture-review',
+        name: 'Store Architecture Review',
+        categorySlug: 'ecommerce',
         description:
-            'Prepaid Visa accepted almost everywhere debit is taken — online, in-store, and on the go.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: true,
-        sortOrder: 1,
-        shortNotice: 'Spend like cash wherever Visa debit is accepted.',
-        deliveryContent:
-            'Digital delivery includes card number, expiration, and security code. Register the card on the issuer site if required before first use.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-16T10:00:00.000Z'),
+            'Work with a consultant to improve your store architecture review approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Checkout flow audit',
+            'Catalog structure recommendations',
+            'Performance improvement roadmap',
+        ],
     },
     {
-        slug: 'mastercard-gift-card',
-        name: 'Mastercard Gift Card',
-        categorySlug: 'cashout',
+        slug: 'conversion-funnel-optimization',
+        name: 'Conversion Funnel Optimization',
+        categorySlug: 'ecommerce',
         description:
-            'Mastercard prepaid for flexible spending across millions of merchants worldwide.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 2,
-        shortNotice: 'One card for shopping, dining, and bills where accepted.',
-        deliveryContent:
-            'Follow the activation link in your email, then add the card to mobile wallets or use online at checkout.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-16T11:00:00.000Z'),
+            'Work with a consultant to improve your conversion funnel optimization approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Session recording analysis',
+            'A/B test hypothesis pack',
+            'Conversion KPI dashboard setup',
+        ],
     },
     {
-        slug: 'paypal',
-        name: 'PayPal',
-        categorySlug: 'cashout',
+        slug: 'payment-cart-diagnostics',
+        name: 'Payment & Cart Diagnostics',
+        categorySlug: 'ecommerce',
         description:
-            'Add funds to PayPal for peer transfers, checkout, or moving money to your bank.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 3,
-        shortNotice: 'Top up your PayPal balance for instant spending power.',
-        deliveryContent:
-            'Redeem in the PayPal app or web under Wallet → Link a card or bank → Redeem gift card / add funds per regional flow.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-16T12:00:00.000Z'),
+            'Work with a consultant to improve your payment & cart diagnostics approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Abandonment reason mapping',
+            'Payment error investigation',
+            'Priority fix list',
+        ],
     },
     {
-        slug: 'venmo',
-        name: 'Venmo',
-        categorySlug: 'cashout',
+        slug: 'crm-pipeline-cleanup',
+        name: 'CRM Pipeline Cleanup',
+        categorySlug: 'crm',
         description:
-            'Venmo balance for paying friends, splitting bills, or cashing out to a linked debit card.',
-        isHot: false,
-        isNew: true,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 4,
-        shortNotice: 'Credit applies to your Venmo balance after redemption.',
-        deliveryContent:
-            'Open Venmo → ☰ → Settings → Payment Methods → Redeem a gift card, then enter the code from your order email.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-12T10:00:00.000Z'),
-        restockedAt: new Date('2026-04-14T16:00:00.000Z'),
+            'Work with a consultant to improve your crm pipeline cleanup approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Stage redesign',
+            'Lead scoring baseline',
+            'Automation trigger cleanup',
+        ],
     },
     {
-        slug: 'marriott-bonvoy',
-        name: 'Marriott Bonvoy',
-        categorySlug: 'hotels',
+        slug: 'sales-workflow-automation',
+        name: 'Sales Workflow Automation',
+        categorySlug: 'crm',
         description:
-            'Marriott Bonvoy gift card toward stays, dining, and spa services at participating Marriott properties.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 5,
-        shortNotice: 'Use at checkout for eligible Marriott hotels.',
-        deliveryContent:
-            'Present the gift card number at the front desk or apply it when booking on marriott.com where accepted.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T08:00:00.000Z'),
+            'Work with a consultant to improve your sales workflow automation approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Automation blueprint',
+            'Opportunity routing setup',
+            'Follow-up sequence templates',
+        ],
     },
     {
-        slug: 'hilton-honors',
-        name: 'Hilton Honors',
-        categorySlug: 'hotels',
+        slug: 'customer-retention-playbook',
+        name: 'Customer Retention Playbook',
+        categorySlug: 'crm',
         description:
-            'Hilton gift card for room nights, upgrades, and on-property dining at Hilton brands.',
-        isHot: false,
-        isNew: true,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 6,
-        shortNotice: 'Redeem toward stays at participating Hilton hotels.',
-        deliveryContent:
-            'Add the card in the Hilton Honors app under Account → Payment Methods, or provide details at check-in.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-11T10:00:00.000Z'),
-        restockedAt: null,
+            'Work with a consultant to improve your customer retention playbook approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Renewal risk signals',
+            'Lifecycle email strategy',
+            'Retention metrics reporting',
+        ],
     },
     {
-        slug: 'starbucks',
-        name: 'Starbucks',
-        categorySlug: 'food',
+        slug: 'technical-seo-deep-audit',
+        name: 'Technical SEO Deep Audit',
+        categorySlug: 'seo',
         description:
-            'Reload your Starbucks Card for drinks, food, and merchandise at participating stores.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: true,
-        sortOrder: 7,
-        shortNotice: 'Scan in the Starbucks app or pay in-store.',
-        deliveryContent:
-            'Add the card number and security code in the Starbucks mobile app under Pay.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T09:00:00.000Z'),
+            'Work with a consultant to improve your technical seo deep audit approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Crawlability and indexing checks',
+            'Core Web Vitals diagnostics',
+            'Fix backlog prioritization',
+        ],
     },
     {
-        slug: 'doordash',
-        name: 'DoorDash',
-        categorySlug: 'food',
+        slug: 'content-gap-strategy',
+        name: 'Content Gap Strategy',
+        categorySlug: 'seo',
         description:
-            'DoorDash credit for delivery and pickup from local restaurants and stores.',
-        isHot: false,
-        isNew: true,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 8,
-        shortNotice: 'Valid for eligible DoorDash orders in your region.',
-        deliveryContent:
-            'In the DoorDash app: Account → Gift Card → enter the code from your email.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-10T10:00:00.000Z'),
-        restockedAt: null,
+            'Work with a consultant to improve your content gap strategy approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Keyword clustering',
+            'Competitor coverage analysis',
+            'Topic roadmap creation',
+        ],
     },
     {
-        slug: 'southwest-airlines',
-        name: 'Southwest Airlines',
-        categorySlug: 'flights',
+        slug: 'local-seo-optimization',
+        name: 'Local SEO Optimization',
+        categorySlug: 'seo',
         description:
-            'Southwest gift card toward flights, EarlyBird Check-In, and more on southwest.com.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 9,
-        shortNotice: 'Apply at checkout when booking Southwest flights.',
-        deliveryContent:
-            'On southwest.com, enter the card number and PIN in the payment section before completing purchase.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T10:00:00.000Z'),
+            'Work with a consultant to improve your local seo optimization approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Profile health review',
+            'Local citation improvement',
+            'Location page recommendations',
+        ],
     },
     {
-        slug: 'delta-air-lines',
-        name: 'Delta Air Lines',
-        categorySlug: 'flights',
+        slug: 'ga4-tracking-reliability-audit',
+        name: 'GA4 & Tracking Reliability Audit',
+        categorySlug: 'analytics',
         description:
-            'Delta Gift Card for tickets, seat upgrades, and fees on delta.com and the Fly Delta app.',
-        isHot: false,
-        isNew: true,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 10,
-        shortNotice: 'Redeem when paying for Delta-operated flights.',
-        deliveryContent:
-            'At checkout on delta.com, choose Gift Card as payment and enter the certificate number and PIN.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-09T10:00:00.000Z'),
-        restockedAt: null,
+            'Work with a consultant to improve your ga4 & tracking reliability audit approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Event model validation',
+            'Tag implementation review',
+            'Data quality monitoring setup',
+        ],
     },
     {
-        slug: 'whole-foods-market',
-        name: 'Whole Foods Market',
-        categorySlug: 'groceries',
+        slug: 'executive-kpi-dashboard-setup',
+        name: 'Executive KPI Dashboard Setup',
+        categorySlug: 'analytics',
         description:
-            'Whole Foods Market gift card for organic groceries, prepared foods, and more.',
-        isHot: false,
-        isNew: true,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 11,
-        shortNotice: 'Use at Whole Foods registers and select Amazon retail.',
-        deliveryContent:
-            'Scan the barcode from your email at checkout or add to the Amazon app for in-store payment where supported.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-08T10:00:00.000Z'),
-        restockedAt: null,
+            'Work with a consultant to improve your executive kpi dashboard setup approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Stakeholder metric mapping',
+            'Dashboard architecture',
+            'Automated weekly reporting',
+        ],
     },
     {
-        slug: 'instacart',
-        name: 'Instacart',
-        categorySlug: 'groceries',
+        slug: 'attribution-insight-session',
+        name: 'Attribution Insight Session',
+        categorySlug: 'analytics',
         description:
-            'Instacart credit for same-day grocery delivery from local stores.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 12,
-        shortNotice: 'Applies to orders placed through Instacart.',
-        deliveryContent:
-            'Instacart app → Account → Your account settings → Gift cards → Add gift card.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T12:00:00.000Z'),
+            'Work with a consultant to improve your attribution insight session approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Channel contribution analysis',
+            'Conversion path breakdown',
+            'Budget allocation recommendations',
+        ],
     },
     {
-        slug: 'amazon',
-        name: 'Amazon',
-        categorySlug: 'shopping',
+        slug: 'google-ads-account-audit',
+        name: 'Google Ads Account Audit',
+        categorySlug: 'paid-media',
         description:
-            'Amazon.com balance for millions of products, Kindle books, and digital content.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: true,
-        sortOrder: 13,
-        shortNotice: 'Applies to your Amazon account balance at checkout.',
-        deliveryContent:
-            'Redeem at amazon.com/gc/redeem — funds never expire for US accounts.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T11:00:00.000Z'),
+            'Work with a consultant to improve your google ads account audit approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Campaign structure review',
+            'Keyword intent alignment',
+            'Budget waste reduction plan',
+        ],
     },
     {
-        slug: 'target',
-        name: 'Target',
-        categorySlug: 'shopping',
+        slug: 'meta-ads-creative-testing-plan',
+        name: 'Meta Ads Creative Testing Plan',
+        categorySlug: 'paid-media',
         description:
-            'Target GiftCard for electronics, home, apparel, and everyday essentials in-store or online.',
-        isHot: false,
-        isNew: true,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 14,
-        shortNotice: 'Redeem at Target stores or on target.com.',
-        deliveryContent:
-            'Target app → Wallet → Add gift card, or enter the access number at checkout online.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-07T10:00:00.000Z'),
-        restockedAt: new Date('2026-04-13T10:00:00.000Z'),
+            'Work with a consultant to improve your meta ads creative testing plan approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Audience segmentation map',
+            'Creative test matrix',
+            'Performance benchmark setup',
+        ],
     },
     {
-        slug: 'nike',
-        name: 'Nike',
-        categorySlug: 'clothing',
+        slug: 'cross-channel-budget-reallocation',
+        name: 'Cross-Channel Budget Reallocation',
+        categorySlug: 'paid-media',
         description:
-            'Nike gift card for sneakers, apparel, and gear on Nike.com and at Nike stores.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 15,
-        shortNotice: 'Works for Nike.com, SNKRS, and participating retail.',
-        deliveryContent:
-            'Nike App → Profile → Settings → Payment → Add gift card, or enter at checkout on Nike.com.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-16T13:00:00.000Z'),
+            'Work with a consultant to improve your cross-channel budget reallocation approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Channel efficiency analysis',
+            'Scenario-based budget splits',
+            '90-day optimization roadmap',
+        ],
     },
     {
-        slug: 'gap',
-        name: 'Gap',
-        categorySlug: 'clothing',
+        slug: 'aws-cost-optimization-sprint',
+        name: 'AWS Cost Optimization Sprint',
+        categorySlug: 'cloud-aws',
         description:
-            'Gap Options gift card redeemable at Gap, Banana Republic, Old Navy, and Athleta.',
-        isHot: false,
-        isNew: true,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 16,
-        shortNotice: 'One card across Gap Inc. family of brands.',
-        deliveryContent:
-            'Present in-store or apply the card number and PIN at checkout on any participating brand site.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-06T10:00:00.000Z'),
-        restockedAt: null,
+            'Work with a consultant to improve your aws cost optimization sprint approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Resource rightsizing review',
+            'Reserved savings recommendations',
+            'Cost governance checklist',
+        ],
     },
     {
-        slug: 'shell-fuel-card',
-        name: 'Shell Fuel Card',
-        categorySlug: 'gas-oil',
+        slug: 'cloud-architecture-health-check',
+        name: 'Cloud Architecture Health Check',
+        categorySlug: 'cloud-aws',
         description:
-            'Shell gift card for fuel, car washes, and convenience items at participating Shell stations.',
-        isHot: false,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 17,
-        shortNotice: 'Swipe at the pump or inside at Shell locations.',
-        deliveryContent:
-            'Physical-style digital card: use the number at the pump keypad or pay inside where Shell cards are accepted.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-14T10:00:00.000Z'),
+            'Work with a consultant to improve your cloud architecture health check approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Availability risk assessment',
+            'Security baseline review',
+            'Scalability improvement priorities',
+        ],
     },
     {
-        slug: 'exxonmobil-gift-card',
-        name: 'ExxonMobil Gift Card',
-        categorySlug: 'gas-oil',
+        slug: 'serverless-migration-planning',
+        name: 'Serverless Migration Planning',
+        categorySlug: 'cloud-aws',
         description:
-            'Exxon and Mobil gift card for fuel and in-store purchases at participating locations.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 18,
-        shortNotice:
-            'Accepted at Exxon and Mobil stations in supported regions.',
-        deliveryContent:
-            'Follow the issuer instructions in your email to activate before first use at the pump or cashier.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-16T14:00:00.000Z'),
+            'Work with a consultant to improve your serverless migration planning approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Workload suitability review',
+            'Migration timeline draft',
+            'Operational readiness checklist',
+        ],
     },
     {
-        slug: 'ticketmaster',
-        name: 'Ticketmaster',
-        categorySlug: 'tickets',
+        slug: 'lifecycle-email-strategy-session',
+        name: 'Lifecycle Email Strategy Session',
+        categorySlug: 'email-marketing',
         description:
-            'Ticketmaster gift card for concerts, sports, theater, and live events.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 19,
-        shortNotice: 'Apply at checkout on ticketmaster.com or the app.',
-        deliveryContent:
-            'Sign in to Ticketmaster → Payment options → Add a gift card, then use it when completing your order.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T14:00:00.000Z'),
+            'Work with a consultant to improve your lifecycle email strategy session approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Lifecycle stage mapping',
+            'High-impact flow recommendations',
+            'Content cadence blueprint',
+        ],
     },
     {
-        slug: 'stubhub',
-        name: 'StubHub',
-        categorySlug: 'tickets',
+        slug: 'klaviyo-automation-optimization',
+        name: 'Klaviyo Automation Optimization',
+        categorySlug: 'email-marketing',
         description:
-            'StubHub gift card toward resale tickets for games, shows, and festivals.',
-        isHot: false,
-        isNew: true,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 20,
-        shortNotice:
-            'Valid on StubHub purchases where gift cards are accepted.',
-        deliveryContent:
-            'StubHub checkout → Add gift card → enter the code from your confirmation email.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-05T10:00:00.000Z'),
-        restockedAt: null,
+            'Work with a consultant to improve your klaviyo automation optimization approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Flow logic cleanup',
+            'Segmentation uplift opportunities',
+            'Revenue tracking validation',
+        ],
     },
     {
-        slug: 'spotify-premium',
-        name: 'Spotify Premium',
-        categorySlug: 'lifestyle',
+        slug: 'deliverability-domain-setup',
+        name: 'Deliverability & Domain Setup',
+        categorySlug: 'email-marketing',
         description:
-            'Spotify Premium for ad-free music, podcasts, and offline listening on your phone.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 21,
-        shortNotice: 'Premium listening without ads.',
-        deliveryContent:
-            'Redeem at spotify.com/redeem using the code from your order confirmation.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'Sweden',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T09:00:00.000Z'),
+            'Work with a consultant to improve your deliverability & domain setup approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'SPF, DKIM, DMARC checks',
+            'Inbox placement diagnostics',
+            'Sender reputation action plan',
+        ],
     },
     {
-        slug: 'google-play',
-        name: 'Google Play',
-        categorySlug: 'lifestyle',
+        slug: 'ai-workflow-discovery-workshop',
+        name: 'AI Workflow Discovery Workshop',
+        categorySlug: 'ai-automation',
         description:
-            'Google Play credit for apps, games, books, and in-app purchases on Android.',
-        isHot: false,
-        isNew: true,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 22,
-        shortNotice: 'Adds balance to your Google Play account.',
-        deliveryContent:
-            'Play Store → Profile icon → Payments & subscriptions → Redeem gift code.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-04T10:00:00.000Z'),
-        restockedAt: new Date('2026-04-12T12:00:00.000Z'),
+            'Work with a consultant to improve your ai workflow discovery workshop approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Use-case prioritization',
+            'Tool stack recommendations',
+            'Implementation quick wins',
+        ],
     },
     {
-        slug: 'pandora',
-        name: 'Pandora Jewelry',
-        categorySlug: 'jewelry',
+        slug: 'prompt-agent-design-review',
+        name: 'Prompt & Agent Design Review',
+        categorySlug: 'ai-automation',
         description:
-            'Pandora gift card for charms, bracelets, and jewelry collections.',
-        isHot: false,
-        isNew: true,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 23,
-        shortNotice: 'Redeem in Pandora stores and on pandora.net.',
-        deliveryContent:
-            'Enter the card number and PIN at checkout online or present in boutique locations.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'Denmark',
-        launchedAt: new Date('2026-04-03T10:00:00.000Z'),
-        restockedAt: null,
+            'Work with a consultant to improve your prompt & agent design review approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Prompt quality audit',
+            'Guardrail design suggestions',
+            'Evaluation checklist setup',
+        ],
     },
     {
-        slug: 'tiffany-co',
-        name: 'Tiffany & Co.',
-        categorySlug: 'jewelry',
+        slug: 'internal-ai-assistant-rollout-plan',
+        name: 'Internal AI Assistant Rollout Plan',
+        categorySlug: 'ai-automation',
         description:
-            'Tiffany gift card toward jewelry, watches, and home designs.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 24,
-        shortNotice: 'Use at Tiffany stores and tiffany.com.',
-        deliveryContent:
-            'Provide the gift card details at checkout in-store or online where Tiffany gift cards are accepted.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-16T09:00:00.000Z'),
-    },
-    {
-        slug: 'hertz',
-        name: 'Hertz',
-        categorySlug: 'rentals',
-        description:
-            'Hertz gift card toward car rentals, add-ons, and insurance at participating locations.',
-        isHot: false,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 25,
-        shortNotice: 'Apply when booking on hertz.com or at the counter.',
-        deliveryContent:
-            'Enter the certificate number when paying online or mention it at pickup per Hertz redemption rules.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-11T14:00:00.000Z'),
-    },
-    {
-        slug: 'enterprise',
-        name: 'Enterprise',
-        categorySlug: 'rentals',
-        description:
-            'Enterprise Rent-A-Car gift certificate for daily and weekly rentals.',
-        isHot: true,
-        isNew: false,
-        isRestocked: false,
-        isFeatured: false,
-        sortOrder: 26,
-        shortNotice:
-            'Valid at participating Enterprise neighborhood locations.',
-        deliveryContent:
-            'Book on enterprise.com and enter the voucher details in the payment step, or present at the rental counter.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: null,
-    },
-    {
-        slug: 'netflix',
-        name: 'Netflix',
-        categorySlug: 'streaming',
-        description:
-            'Stream thousands of TV shows and movies. Apply balance toward any Netflix plan.',
-        isHot: true,
-        isNew: false,
-        isRestocked: true,
-        isFeatured: true,
-        sortOrder: 27,
-        shortNotice:
-            'Apply to new or existing Netflix accounts in supported regions.',
-        deliveryContent:
-            'Redeem at netflix.com/redeem — enter the code and the value applies to your next bills.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: null,
-        restockedAt: new Date('2026-04-15T08:00:00.000Z'),
-    },
-    {
-        slug: 'disney-plus',
-        name: 'Disney+',
-        categorySlug: 'streaming',
-        description:
-            'Disney+ subscription credit for Marvel, Star Wars, Pixar, and National Geographic streaming.',
-        isHot: true,
-        isNew: true,
-        isRestocked: true,
-        isFeatured: false,
-        sortOrder: 28,
-        shortNotice: 'Redeem toward Disney+ in supported countries.',
-        deliveryContent:
-            'Visit disneyplus.com/redeem (or regional equivalent), sign in, and enter the subscription code from your email.',
-        redeemProcess: REDEEM_HTML,
-        warrantyText: WARRANTY_HTML,
-        countryOfOrigin: 'United States',
-        launchedAt: new Date('2026-04-13T10:00:00.000Z'),
-        restockedAt: new Date('2026-04-16T08:00:00.000Z'),
+            'Work with a consultant to improve your internal ai assistant rollout plan approach. This session focuses on practical actions you can apply right away.',
+        features: [
+            'Rollout governance model',
+            'Knowledge source integration',
+            'Team adoption framework',
+        ],
     },
 ];
-
-const VARIANT_DENOMS = [
-    { label: '$1', price: '1.00', sortOrder: 0 },
-    { label: '$3', price: '3.00', sortOrder: 1 },
-    { label: '$5', price: '5.00', sortOrder: 2 },
-] as const;
-
-const REGION_ROWS = [
-    { label: 'Global', countryCode: 'US', sortOrder: 0 },
-    { label: 'North America', countryCode: 'CA', sortOrder: 1 },
-    { label: 'Europe', countryCode: 'GB', sortOrder: 2 },
-] as const;
-
-const STREAMING_RELATED: ProductSlug[] = ['netflix', 'disney-plus'];
-const FOOD_RELATED: ProductSlug[] = ['starbucks', 'doordash'];
-const FLIGHTS_RELATED: ProductSlug[] = [
-    'southwest-airlines',
-    'delta-air-lines',
-];
-const HOTELS_RELATED: ProductSlug[] = ['marriott-bonvoy', 'hilton-honors'];
 
 @Injectable()
 export class ProductsSeedService {
@@ -773,8 +407,7 @@ export class ProductsSeedService {
 
     @Command({
         command: 'seed:products',
-        describe:
-            'Seed product categories and products for testing payment flow',
+        describe: 'Seed product categories and products matching browse-services page',
     })
     async seed(): Promise<void> {
         this.logger.info('Starting product seeding...');
@@ -787,9 +420,6 @@ export class ProductsSeedService {
 
             const products = await this.createProducts(categories);
             this.logger.info(`Ensured ${products.length} products`);
-
-            await this.seedRelatedProducts();
-            this.logger.info('Related product links ensured');
 
             this.logger.info('Product seeding completed successfully');
         } catch (error) {
@@ -818,9 +448,7 @@ export class ProductsSeedService {
                         data: {
                             name: row.name,
                             slug: row.slug,
-                            description: row.description,
                             icon: row.icon,
-                            sortOrder: row.sortOrder,
                         },
                     });
                 map[row.slug] = created;
@@ -848,60 +476,20 @@ export class ProductsSeedService {
             }
 
             const category = categories[def.categorySlug];
-            const imageUrl = `https://picsum.photos/seed/${def.slug}/640/360`;
-            const basePrice = VARIANT_DENOMS[0].price;
 
             const product = await this.databaseService.product.create({
                 data: {
                     name: def.name,
                     slug: def.slug,
                     description: def.description,
-                    price: new Prisma.Decimal(basePrice),
+                    price: new Prisma.Decimal('5.00'),
                     currency: 'USD',
-                    stockQuantity: 10_000,
+                    isActive: true,
                     categoryId: category.id,
-                    deliveryType: DeliveryType.INSTANT,
-                    deliveryContent: def.deliveryContent,
-                    isFeatured: def.isFeatured,
-                    sortOrder: def.sortOrder,
-                    shortNotice: def.shortNotice,
-                    isHot: def.isHot,
-                    isNew: def.isNew,
-                    isNFA: false,
-                    isRestocked: def.isRestocked,
-                    launchedAt: def.launchedAt,
-                    restockedAt: def.restockedAt,
-                    redeemProcess: def.redeemProcess,
-                    warrantyText: def.warrantyText,
-                    countryOfOrigin: def.countryOfOrigin,
-                    images: {
-                        create: [
-                            {
-                                key: imageUrl,
-                                url: imageUrl,
-                                isPrimary: true,
-                                sortOrder: 0,
-                            },
-                        ],
-                    },
-                    variants: {
-                        create: VARIANT_DENOMS.map(v => ({
-                            label: v.label,
-                            price: new Prisma.Decimal(v.price),
-                            currency: 'USD',
-                            stockQuantity: 5000,
-                            sortOrder: v.sortOrder,
-                        })),
-                    },
-                    regions: {
-                        createMany: {
-                            data: REGION_ROWS.map(r => ({
-                                label: r.label,
-                                countryCode: r.countryCode,
-                                sortOrder: r.sortOrder,
-                            })),
-                        },
-                    },
+                    features: def.features,
+                    included: DEFAULT_INCLUDED,
+                    sessionMeta: DEFAULT_SESSION_META,
+                    howItWorks: DEFAULT_HOW_IT_WORKS,
                 },
             });
 
@@ -910,42 +498,5 @@ export class ProductsSeedService {
         }
 
         return products;
-    }
-
-    private async seedRelatedProducts(): Promise<void> {
-        const slugToId = new Map<string, string>();
-        for (const def of PRODUCT_DEFS) {
-            const row = await this.databaseService.product.findUnique({
-                where: { slug: def.slug },
-            });
-            if (row) slugToId.set(def.slug, row.id);
-        }
-
-        const pairs: Array<{ productId: string; relatedProductId: string }> =
-            [];
-
-        const addCluster = (slugs: ProductSlug[]) => {
-            for (const a of slugs) {
-                for (const b of slugs) {
-                    if (a === b) continue;
-                    const idA = slugToId.get(a);
-                    const idB = slugToId.get(b);
-                    if (!idA || !idB) continue;
-                    pairs.push({ productId: idA, relatedProductId: idB });
-                }
-            }
-        };
-
-        addCluster(STREAMING_RELATED);
-        addCluster(FOOD_RELATED);
-        addCluster(FLIGHTS_RELATED);
-        addCluster(HOTELS_RELATED);
-
-        if (pairs.length === 0) return;
-
-        await this.databaseService.productRelated.createMany({
-            data: pairs,
-            skipDuplicates: true,
-        });
     }
 }

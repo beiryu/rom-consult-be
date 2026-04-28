@@ -35,7 +35,6 @@ export class ProductCategoryService implements IProductCategoryService {
                     where: {
                         slug,
                         ...(excludeId && { id: { not: excludeId } }),
-                        deletedAt: null,
                     },
                 });
 
@@ -59,7 +58,6 @@ export class ProductCategoryService implements IProductCategoryService {
                 await this.databaseService.productCategory.findFirst({
                     where: {
                         name: data.name,
-                        deletedAt: null,
                     },
                 });
 
@@ -74,10 +72,8 @@ export class ProductCategoryService implements IProductCategoryService {
                 data: {
                     name: data.name,
                     slug,
-                    description: data.description,
                     icon: data.icon,
                     isActive: data.isActive ?? true,
-                    sortOrder: data.sortOrder ?? 0,
                 },
             });
 
@@ -101,9 +97,7 @@ export class ProductCategoryService implements IProductCategoryService {
         isActive?: boolean;
     }): Promise<ApiPaginatedDataDto<CategoryResponseDto>> {
         try {
-            const where: any = {
-                deletedAt: null,
-            };
+            const where: any = {};
 
             if (options?.isActive !== undefined) {
                 where.isActive = options.isActive;
@@ -118,10 +112,7 @@ export class ProductCategoryService implements IProductCategoryService {
                     },
                     {
                         where,
-                        orderBy: [
-                            { sortOrder: 'asc' as const },
-                            { createdAt: 'desc' as const },
-                        ],
+                        orderBy: [{ createdAt: 'desc' as const }],
                     }
                 );
 
@@ -141,7 +132,6 @@ export class ProductCategoryService implements IProductCategoryService {
                 await this.databaseService.productCategory.findFirst({
                     where: {
                         id,
-                        deletedAt: null,
                     },
                 });
 
@@ -171,7 +161,6 @@ export class ProductCategoryService implements IProductCategoryService {
                 await this.databaseService.productCategory.findFirst({
                     where: {
                         slug,
-                        deletedAt: null,
                     },
                 });
 
@@ -212,7 +201,6 @@ export class ProductCategoryService implements IProductCategoryService {
                         where: {
                             name: data.name,
                             id: { not: id },
-                            deletedAt: null,
                         },
                     });
 
@@ -263,7 +251,6 @@ export class ProductCategoryService implements IProductCategoryService {
             const productCount = await this.databaseService.product.count({
                 where: {
                     categoryId: id,
-                    deletedAt: null,
                 },
             });
 
@@ -274,13 +261,7 @@ export class ProductCategoryService implements IProductCategoryService {
                 );
             }
 
-            // Soft delete
-            await this.databaseService.productCategory.update({
-                where: { id },
-                data: {
-                    deletedAt: new Date(),
-                },
-            });
+            await this.databaseService.productCategory.delete({ where: { id } });
 
             this.logger.info({ categoryId: id }, 'Category deleted');
             return {
